@@ -1,56 +1,102 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
-import { ChevronLeft, ChevronRight, Calendar, MapPin } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Calendar, MapPin, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Link } from 'react-router-dom';
-
-const slides = [
-  {
-    id: 1,
-    title: 'Coldplay',
-    subtitle: 'Music of the Spheres World Tour',
-    date: '15 de Marzo, 2025',
-    location: 'Estadio River Plate, Buenos Aires',
-    image: 'https://images.unsplash.com/photo-1540039155733-5bb30b53aa14?w=1920&q=80',
-    price: 'Desde $45.000',
-  },
-  {
-    id: 2,
-    title: 'Lollapalooza Argentina',
-    subtitle: 'El festival más grande de Latinoamérica',
-    date: '21-23 de Marzo, 2025',
-    location: 'Hipódromo de San Isidro',
-    image: 'https://images.unsplash.com/photo-1459749411175-04bf5292ceea?w=1920&q=80',
-    price: 'Desde $85.000',
-  },
-  {
-    id: 3,
-    title: 'Bad Bunny',
-    subtitle: 'Most Wanted Tour',
-    date: '28 de Abril, 2025',
-    location: 'Estadio Único de La Plata',
-    image: 'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=1920&q=80',
-    price: 'Desde $55.000',
-  },
-];
+import { eventsApi } from '@/lib/api';
 
 const HeroSlider = () => {
   const [currentSlide, setCurrentSlide] = useState(0);
   const [isAutoPlaying, setIsAutoPlaying] = useState(true);
 
+  // Obtener eventos destacados para el slider
+  const { data: eventsResponse, isLoading, error } = useQuery({
+    queryKey: ['hero-events'],
+    queryFn: () => eventsApi.list({ limit: 5 }),
+    retry: 1,
+    staleTime: 30000,
+  });
+
+  const slides = useMemo(() => {
+    // Asegurarse de que data sea un array
+    const eventsData = Array.isArray(eventsResponse?.data) 
+      ? eventsResponse.data 
+      : (eventsResponse?.data?.events || []);
+    
+    if (!eventsData || !Array.isArray(eventsData) || eventsData.length === 0) return [];
+    
+    return eventsData
+      .filter((event: any) => event.isActive && new Date(event.date) >= new Date())
+      .slice(0, 5)
+      .map((event: any) => {
+        const minPrice = event.ticketTypes?.length > 0
+          ? Math.min(...event.ticketTypes.map((tt: any) => Number(tt.price)))
+          : 0;
+
+        const eventDate = new Date(event.date);
+        const formattedDate = eventDate.toLocaleDateString('es-AR', {
+          day: 'numeric',
+          month: 'long',
+          year: 'numeric',
+        });
+
+        const imageUrl = event.image
+          ? `${import.meta.env.VITE_BACKEND_URL || 'http://localhost:3000'}${event.image}`
+          : 'https://images.unsplash.com/photo-1540039155733-5bb30b53aa14?w=1920&q=80';
+
+        return {
+          id: event.id,
+          title: event.title.split(' - ')[0] || event.title,
+          subtitle: event.subtitle || event.title.split(' - ').slice(1).join(' - ') || '',
+          date: formattedDate,
+          location: `${event.venue}, ${event.city}`,
+          image: imageUrl,
+          price: `Desde $${minPrice.toLocaleString('es-AR')}`,
+        };
+      });
+  }, [eventsResponse]);
+
   const nextSlide = useCallback(() => {
+    if (slides.length === 0) return;
     setCurrentSlide((prev) => (prev + 1) % slides.length);
-  }, []);
+  }, [slides.length]);
 
   const prevSlide = () => {
+    if (slides.length === 0) return;
     setCurrentSlide((prev) => (prev - 1 + slides.length) % slides.length);
   };
 
   useEffect(() => {
-    if (!isAutoPlaying) return;
+    if (!isAutoPlaying || slides.length === 0) return;
     const interval = setInterval(nextSlide, 5000);
     return () => clearInterval(interval);
-  }, [isAutoPlaying, nextSlide]);
+  }, [isAutoPlaying, nextSlide, slides.length]);
+
+  if (isLoading) {
+    return (
+      <section className="relative h-[600px] md:h-[700px] overflow-hidden flex items-center justify-center bg-muted">
+        <div className="text-center">
+          <Loader2 className="w-12 h-12 animate-spin mx-auto mb-4 text-primary" />
+          <p className="text-muted-foreground">Cargando eventos destacados...</p>
+        </div>
+      </section>
+    );
+  }
+
+  if (error || slides.length === 0) {
+    return (
+      <section className="relative h-[600px] md:h-[700px] overflow-hidden flex items-center justify-center bg-gradient-to-r from-primary/20 to-secondary/20">
+        <div className="text-center">
+          <h1 className="text-4xl md:text-6xl font-bold mb-4">Ticket-Ya</h1>
+          <p className="text-xl text-muted-foreground">Tu plataforma de entradas</p>
+          {error && (
+            <p className="text-sm text-muted-foreground mt-4">No se pudieron cargar los eventos destacados</p>
+          )}
+        </div>
+      </section>
+    );
+  }
 
   return (
     <section 

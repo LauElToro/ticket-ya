@@ -3,7 +3,7 @@ import { Calendar, MapPin, ArrowRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 export interface EventCardProps {
-  id: number;
+  id: string | number;
   title: string;
   image: string;
   date: string;

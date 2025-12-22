@@ -1,96 +1,12 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
 import EventCard, { EventCardProps } from '@/components/home/EventCard';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Search, Filter, X } from 'lucide-react';
-
-const allEvents: EventCardProps[] = [
-  {
-    id: 1,
-    title: 'Coldplay - Music of the Spheres Tour',
-    image: 'https://images.unsplash.com/photo-1540039155733-5bb30b53aa14?w=800&q=80',
-    date: '15 de Marzo, 2025',
-    venue: 'Estadio River Plate',
-    city: 'Buenos Aires',
-    price: 45000,
-    category: 'Música',
-  },
-  {
-    id: 2,
-    title: 'Lollapalooza Argentina 2025',
-    image: 'https://images.unsplash.com/photo-1459749411175-04bf5292ceea?w=800&q=80',
-    date: '21-23 de Marzo, 2025',
-    venue: 'Hipódromo de San Isidro',
-    city: 'Buenos Aires',
-    price: 85000,
-    category: 'Festival',
-  },
-  {
-    id: 3,
-    title: 'Soda Stereo Sinfónico',
-    image: 'https://images.unsplash.com/photo-1514320291840-2e0a9bf2a9ae?w=800&q=80',
-    date: '5 de Abril, 2025',
-    venue: 'Teatro Colón',
-    city: 'Buenos Aires',
-    price: 35000,
-    category: 'Música',
-  },
-  {
-    id: 4,
-    title: 'Juan Carlos Copes - Stand Up',
-    image: 'https://images.unsplash.com/photo-1585699324551-f6c309eedeca?w=800&q=80',
-    date: '12 de Abril, 2025',
-    venue: 'Teatro Gran Rex',
-    city: 'Buenos Aires',
-    price: 12000,
-    category: 'Stand Up',
-  },
-  {
-    id: 5,
-    title: 'Fiesta Bresh',
-    image: 'https://images.unsplash.com/photo-1492684223066-81342ee5ff30?w=800&q=80',
-    date: '20 de Abril, 2025',
-    venue: 'Groove',
-    city: 'Buenos Aires',
-    price: 8000,
-    category: 'Fiestas',
-  },
-  {
-    id: 6,
-    title: 'Boca Juniors vs River Plate',
-    image: 'https://images.unsplash.com/photo-1574629810360-7efbbe195018?w=800&q=80',
-    date: '28 de Abril, 2025',
-    venue: 'La Bombonera',
-    city: 'Buenos Aires',
-    price: 25000,
-    category: 'Deportes',
-  },
-  {
-    id: 7,
-    title: 'Taylor Swift - Eras Tour',
-    image: 'https://images.unsplash.com/photo-1501281668745-f7f57925c3b4?w=800&q=80',
-    date: '10 de Mayo, 2025',
-    venue: 'Estadio River Plate',
-    city: 'Buenos Aires',
-    price: 120000,
-    category: 'Música',
-  },
-  {
-    id: 8,
-    title: 'El Fantasma de la Ópera',
-    image: 'https://images.unsplash.com/photo-1507676184212-d03ab07a01bf?w=800&q=80',
-    date: '15 de Mayo, 2025',
-    venue: 'Teatro Ópera',
-    city: 'Buenos Aires',
-    price: 28000,
-    category: 'Teatro',
-  },
-];
-
-const categories = ['Todos', 'Música', 'Teatro', 'Stand Up', 'Fiestas', 'Deportes', 'Festival'];
-const cities = ['Todas', 'Buenos Aires', 'Córdoba', 'Rosario', 'Mendoza', 'La Plata'];
+import { Search, Filter, X, Loader2 } from 'lucide-react';
+import { eventsApi } from '@/lib/api';
 
 const Eventos = () => {
   const [searchQuery, setSearchQuery] = useState('');
@@ -98,12 +14,88 @@ const Eventos = () => {
   const [selectedCity, setSelectedCity] = useState('Todas');
   const [showFilters, setShowFilters] = useState(false);
 
-  const filteredEvents = allEvents.filter((event) => {
-    const matchesSearch = event.title.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesCategory = selectedCategory === 'Todos' || event.category === selectedCategory;
-    const matchesCity = selectedCity === 'Todas' || event.city === selectedCity;
-    return matchesSearch && matchesCategory && matchesCity;
+  // Obtener eventos de la API con debounce en búsqueda
+  const { data: eventsResponse, isLoading, error } = useQuery({
+    queryKey: ['events', searchQuery, selectedCategory, selectedCity],
+    queryFn: () => eventsApi.list({
+      search: searchQuery || undefined,
+      category: selectedCategory !== 'Todos' ? selectedCategory : undefined,
+      city: selectedCity !== 'Todas' ? selectedCity : undefined,
+    }),
+    staleTime: 30000, // Cache por 30 segundos
+    retry: 1,
   });
+
+  const allEvents: EventCardProps[] = useMemo(() => {
+    // Asegurarse de que data sea un array
+    const eventsData = Array.isArray(eventsResponse?.data) 
+      ? eventsResponse.data 
+      : (eventsResponse?.data?.events || []);
+    
+    if (!eventsData || eventsData.length === 0) return [];
+    
+    return eventsData.map((event: any) => {
+      // Obtener el precio mínimo de los tipos de entrada
+      const minPrice = event.ticketTypes?.length > 0
+        ? Math.min(...event.ticketTypes.map((tt: any) => Number(tt.price)))
+        : 0;
+
+      // Formatear fecha
+      const eventDate = new Date(event.date);
+      const formattedDate = eventDate.toLocaleDateString('es-AR', {
+        day: 'numeric',
+        month: 'long',
+        year: 'numeric',
+      });
+
+      // Construir URL de imagen
+      const imageUrl = event.image
+        ? `${import.meta.env.VITE_BACKEND_URL || 'http://localhost:3000'}${event.image}`
+        : 'https://images.unsplash.com/photo-1540039155733-5bb30b53aa14?w=800&q=80';
+
+      return {
+        id: event.id,
+        title: event.title,
+        image: imageUrl,
+        date: formattedDate,
+        venue: event.venue,
+        city: event.city,
+        price: minPrice,
+        category: event.category,
+      };
+    });
+  }, [eventsResponse]);
+
+  // Obtener categorías y ciudades únicas de los eventos
+  const categories = useMemo(() => {
+    const cats = new Set<string>();
+    const eventsData = Array.isArray(eventsResponse?.data) 
+      ? eventsResponse.data 
+      : (eventsResponse?.data?.events || []);
+    
+    if (Array.isArray(eventsData)) {
+      eventsData.forEach((event: any) => {
+        if (event?.category) cats.add(event.category);
+      });
+    }
+    return ['Todos', ...Array.from(cats).sort()];
+  }, [eventsResponse]);
+
+  const cities = useMemo(() => {
+    const citySet = new Set<string>();
+    const eventsData = Array.isArray(eventsResponse?.data) 
+      ? eventsResponse.data 
+      : (eventsResponse?.data?.events || []);
+    
+    if (Array.isArray(eventsData)) {
+      eventsData.forEach((event: any) => {
+        if (event?.city) citySet.add(event.city);
+      });
+    }
+    return ['Todas', ...Array.from(citySet).sort()];
+  }, [eventsResponse]);
+
+  const filteredEvents = allEvents;
 
   const clearFilters = () => {
     setSearchQuery('');
@@ -123,7 +115,7 @@ const Eventos = () => {
           <div className="mb-8">
             <h1 className="text-3xl md:text-4xl font-bold mb-2">Todos los eventos</h1>
             <p className="text-muted-foreground">
-              Encontrá tu próxima experiencia entre {allEvents.length} eventos disponibles
+              {isLoading ? 'Cargando eventos...' : `Encontrá tu próxima experiencia entre ${allEvents.length} eventos disponibles`}
             </p>
           </div>
 
@@ -225,14 +217,32 @@ const Eventos = () => {
           </div>
 
           {/* Results */}
-          <div className="mb-4">
-            <p className="text-sm text-muted-foreground">
-              {filteredEvents.length} eventos encontrados
-            </p>
-          </div>
+          {isLoading ? (
+            <div className="text-center py-16">
+              <Loader2 className="w-12 h-12 animate-spin mx-auto mb-4 text-primary" />
+              <p className="text-muted-foreground">Cargando eventos...</p>
+            </div>
+          ) : error ? (
+            <div className="text-center py-16">
+              <p className="text-xl text-muted-foreground mb-4">
+                No se pudieron cargar los eventos
+              </p>
+              <Button variant="outline" onClick={() => window.location.reload()}>
+                Reintentar
+              </Button>
+            </div>
+          ) : (
+            <>
+              {allEvents.length > 0 && (
+                <div className="mb-4">
+                  <p className="text-sm text-muted-foreground">
+                    {filteredEvents.length} eventos encontrados
+                  </p>
+                </div>
+              )}
 
-          {/* Events Grid */}
-          {filteredEvents.length > 0 ? (
+              {/* Events Grid */}
+              {filteredEvents.length > 0 ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
               {filteredEvents.map((event, index) => (
                 <div 
@@ -245,14 +255,31 @@ const Eventos = () => {
               ))}
             </div>
           ) : (
-            <div className="text-center py-16">
-              <p className="text-xl text-muted-foreground mb-4">
-                No encontramos eventos con esos filtros
-              </p>
-              <Button variant="outline" onClick={clearFilters}>
-                Limpiar filtros
-              </Button>
+            <div className="text-center py-16 glass-card rounded-2xl">
+              <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mx-auto mb-4">
+                <Search className="w-8 h-8 text-muted-foreground" />
+              </div>
+              {hasActiveFilters ? (
+                <>
+                  <h3 className="text-xl font-semibold mb-2">No encontramos eventos con esos filtros</h3>
+                  <p className="text-muted-foreground mb-6">
+                    Intentá cambiar los filtros de búsqueda
+                  </p>
+                  <Button variant="outline" onClick={clearFilters}>
+                    Limpiar filtros
+                  </Button>
+                </>
+              ) : (
+                <>
+                  <h3 className="text-xl font-semibold mb-2">Aún no hay eventos disponibles</h3>
+                  <p className="text-muted-foreground">
+                    Los eventos aparecerán aquí cuando estén disponibles
+                  </p>
+                </>
+              )}
             </div>
+          )}
+            </>
           )}
         </div>
       </main>

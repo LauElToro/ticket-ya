@@ -1,13 +1,18 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { ShieldCheck, CreditCard, Wallet, Banknote, Building2, Check, ArrowLeft, Loader2 } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { ShieldCheck, CreditCard, Wallet, Banknote, Building2, Check, ArrowLeft, Loader2, MapPin, ExternalLink, Copy, CheckCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { toast } from '@/hooks/use-toast';
+import { paymentPlacesApi, ordersApi, api } from '@/lib/api';
+import { useAuth } from '@/contexts/AuthContext';
 
 const paymentMethods = [
   { id: 'mercadopago', name: 'MercadoPago', icon: Wallet, description: 'Hasta 12 cuotas sin interés' },
@@ -20,6 +25,7 @@ const paymentMethods = [
 const Checkout = () => {
   const location = useLocation();
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [step, setStep] = useState(1);
   const [isProcessing, setIsProcessing] = useState(false);
   const [selectedPayment, setSelectedPayment] = useState('mercadopago');
@@ -31,21 +37,19 @@ const Checkout = () => {
     phone: '',
   });
 
-  // Mock data if no state passed
-  const eventData = location.state?.event || {
-    title: 'Coldplay - Music of the Spheres Tour',
-    date: '15 de Marzo, 2025',
-    venue: 'Estadio River Plate',
-    tickets: [
-      { id: 1, name: 'Campo General', price: 45000 },
-    ],
-  };
+  // Obtener datos del estado de navegación
+  const eventData = location.state?.event;
+  const selectedTickets = location.state?.tickets || {};
 
-  const selectedTickets = location.state?.tickets || { 1: 2 };
+  // Si no hay datos, redirigir a eventos
+  if (!eventData || !selectedTickets || Object.keys(selectedTickets).length === 0) {
+    navigate('/eventos');
+    return null;
+  }
   
   const totalAmount = Object.entries(selectedTickets).reduce((total, [ticketId, qty]) => {
-    const ticket = eventData.tickets?.find((t: any) => t.id === Number(ticketId));
-    return total + (ticket?.price || 45000) * (qty as number);
+    const ticket = eventData.tickets?.find((t: any) => String(t.id) === String(ticketId));
+    return total + (ticket?.price || 0) * (qty as number);
   }, 0);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -62,12 +66,119 @@ const Checkout = () => {
     setStep(step + 1);
   };
 
+  // Obtener lugares de pago si es efectivo
+  const { data: paymentPlacesData } = useQuery({
+    queryKey: ['payment-places', eventData?.city, eventData?.address],
+    queryFn: () => paymentPlacesApi.getNearbyPlaces({
+      city: eventData?.city || '',
+      address: eventData?.address,
+      latitude: eventData?.latitude ? parseFloat(eventData.latitude) : undefined,
+      longitude: eventData?.longitude ? parseFloat(eventData.longitude) : undefined,
+    }),
+    enabled: selectedPayment === 'cash' && !!eventData?.city,
+  });
+
+  // Obtener datos bancarios si es efectivo
+  const { data: bankAccountData } = useQuery({
+    queryKey: ['bank-account'],
+    queryFn: () => paymentPlacesApi.getBankAccountInfo(),
+    enabled: selectedPayment === 'cash',
+  });
+
   const handlePayment = async () => {
+    if (!user) {
+      toast({
+        title: 'Debes iniciar sesión',
+        description: 'Necesitas estar logueado para realizar una compra',
+        variant: 'destructive',
+      });
+      navigate('/login', { state: { from: '/checkout' } });
+      return;
+    }
+
+    // Verificar que el token existe
+    const token = localStorage.getItem('token');
+    if (!token) {
+      toast({
+        title: 'Sesión expirada',
+        description: 'Por favor, iniciá sesión nuevamente',
+        variant: 'destructive',
+      });
+      navigate('/login', { state: { from: '/checkout' } });
+      return;
+    }
+
     setIsProcessing(true);
-    // Simulate payment processing
-    await new Promise((resolve) => setTimeout(resolve, 2000));
-    setIsProcessing(false);
-    navigate('/confirmacion', { state: { event: eventData, tickets: selectedTickets, formData } });
+    
+    try {
+      // Preparar datos de tickets
+      const ticketsData = Object.entries(selectedTickets).map(([ticketId, quantity]) => ({
+        ticketTypeId: ticketId,
+        quantity: quantity as number,
+      }));
+
+      // Mapear método de pago del frontend al backend
+      const paymentMethodMap: Record<string, string> = {
+        'mercadopago': 'MERCADOPAGO',
+        'credit': 'MERCADOPAGO',
+        'debit': 'MERCADOPAGO',
+        'cash': 'CASH',
+        'transfer': 'BANK_TRANSFER',
+      };
+
+      const backendPaymentMethod = paymentMethodMap[selectedPayment] || 'MERCADOPAGO';
+
+      // Asegurar que el token esté actualizado en el cliente API
+      api.setToken(token);
+
+      // Crear la orden
+      const orderResponse = await ordersApi.create({
+        eventId: eventData.id,
+        tickets: ticketsData,
+        paymentMethod: backendPaymentMethod,
+      });
+
+      setIsProcessing(false);
+      
+      navigate('/confirmacion', { 
+        state: { 
+          event: eventData, 
+          tickets: selectedTickets, 
+          formData,
+          paymentMethod: selectedPayment,
+          paymentPlaces: paymentPlacesData?.data,
+          bankAccount: bankAccountData?.data,
+          order: orderResponse.data,
+        } 
+      });
+    } catch (error: any) {
+      setIsProcessing(false);
+      
+      // Si es error de autenticación, redirigir a login
+      if (error.message?.includes('401') || error.message?.includes('Token') || error.message?.includes('autenticación')) {
+        toast({
+          title: 'Sesión expirada',
+          description: 'Por favor, iniciá sesión nuevamente',
+          variant: 'destructive',
+        });
+        navigate('/login', { state: { from: '/checkout' } });
+        return;
+      }
+
+      toast({
+        title: 'Error al procesar el pago',
+        description: error.message || 'Ocurrió un error al crear la orden',
+        variant: 'destructive',
+      });
+    }
+  };
+
+  const copyToClipboard = (text: string, label: string) => {
+    navigator.clipboard.writeText(text);
+    toast({
+      title: `${label} copiado`,
+      description: 'Se copió al portapapeles',
+    });
   };
 
   return (
@@ -179,51 +290,173 @@ const Checkout = () => {
 
               {/* Step 2: Payment Method */}
               {step === 2 && (
-                <div className="glass-card rounded-2xl p-6 animate-fade-up">
-                  <h2 className="text-xl font-semibold mb-6">Método de pago</h2>
-                  <div className="space-y-3">
-                    {paymentMethods.map((method) => {
-                      const Icon = method.icon;
-                      return (
-                        <button
-                          key={method.id}
-                          onClick={() => setSelectedPayment(method.id)}
-                          className={cn(
-                            'w-full p-4 rounded-xl border-2 flex items-center gap-4 transition-all',
-                            selectedPayment === method.id
-                              ? 'border-secondary bg-secondary/5'
-                              : 'border-border hover:border-secondary/50'
-                          )}
-                        >
-                          <div className={cn(
-                            'w-12 h-12 rounded-lg flex items-center justify-center',
-                            selectedPayment === method.id ? 'bg-secondary/20' : 'bg-muted'
-                          )}>
-                            <Icon className={cn(
-                              'w-6 h-6',
-                              selectedPayment === method.id ? 'text-secondary' : 'text-muted-foreground'
-                            )} />
-                          </div>
-                          <div className="text-left flex-1">
-                            <p className="font-medium">{method.name}</p>
-                            <p className="text-sm text-muted-foreground">{method.description}</p>
-                          </div>
-                          <div className={cn(
-                            'w-5 h-5 rounded-full border-2 flex items-center justify-center',
-                            selectedPayment === method.id ? 'border-secondary' : 'border-muted-foreground'
-                          )}>
-                            {selectedPayment === method.id && (
-                              <div className="w-2.5 h-2.5 rounded-full bg-secondary" />
+                <div className="space-y-6">
+                  <div className="glass-card rounded-2xl p-6 animate-fade-up">
+                    <h2 className="text-xl font-semibold mb-6">Método de pago</h2>
+                    <div className="space-y-3">
+                      {paymentMethods.map((method) => {
+                        const Icon = method.icon;
+                        return (
+                          <button
+                            key={method.id}
+                            onClick={() => setSelectedPayment(method.id)}
+                            className={cn(
+                              'w-full p-4 rounded-xl border-2 flex items-center gap-4 transition-all',
+                              selectedPayment === method.id
+                                ? 'border-secondary bg-secondary/5'
+                                : 'border-border hover:border-secondary/50'
                             )}
-                          </div>
-                        </button>
-                      );
-                    })}
+                          >
+                            <div className={cn(
+                              'w-12 h-12 rounded-lg flex items-center justify-center',
+                              selectedPayment === method.id ? 'bg-secondary/20' : 'bg-muted'
+                            )}>
+                              <Icon className={cn(
+                                'w-6 h-6',
+                                selectedPayment === method.id ? 'text-secondary' : 'text-muted-foreground'
+                              )} />
+                            </div>
+                            <div className="text-left flex-1">
+                              <p className="font-medium">{method.name}</p>
+                              <p className="text-sm text-muted-foreground">{method.description}</p>
+                            </div>
+                            <div className={cn(
+                              'w-5 h-5 rounded-full border-2 flex items-center justify-center',
+                              selectedPayment === method.id ? 'border-secondary' : 'border-muted-foreground'
+                            )}>
+                              {selectedPayment === method.id && (
+                                <div className="w-2.5 h-2.5 rounded-full bg-secondary" />
+                              )}
+                            </div>
+                          </button>
+                        );
+                      })}
+                    </div>
                   </div>
+
+                  {/* Información de pago en efectivo */}
+                  {selectedPayment === 'cash' && (
+                    <div className="glass-card rounded-2xl p-6 animate-fade-up border-2 border-secondary/20">
+                      <div className="flex items-center gap-2 mb-4">
+                        <Banknote className="w-5 h-5 text-secondary" />
+                        <h3 className="text-lg font-semibold">Información de pago en efectivo</h3>
+                      </div>
+                      
+                      {/* Datos bancarios */}
+                      {bankAccountData?.data && (
+                        <Card className="mb-4">
+                          <CardHeader className="pb-3">
+                            <CardTitle className="text-base">Datos para el pago</CardTitle>
+                          </CardHeader>
+                          <CardContent className="space-y-3">
+                            <div className="space-y-2 text-sm">
+                              <div className="flex justify-between items-center">
+                                <span className="text-muted-foreground">Banco:</span>
+                                <span className="font-medium">{bankAccountData.data.bankName}</span>
+                              </div>
+                              <div className="flex justify-between items-center">
+                                <span className="text-muted-foreground">Titular:</span>
+                                <span className="font-medium">{bankAccountData.data.accountHolder}</span>
+                              </div>
+                              <div className="flex justify-between items-center">
+                                <span className="text-muted-foreground">CBU:</span>
+                                <div className="flex items-center gap-2">
+                                  <span className="font-mono text-xs">{bankAccountData.data.cbu}</span>
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-6 w-6"
+                                    onClick={() => copyToClipboard(bankAccountData.data.cbu, 'CBU')}
+                                  >
+                                    <Copy className="w-3 h-3" />
+                                  </Button>
+                                </div>
+                              </div>
+                              <div className="flex justify-between items-center">
+                                <span className="text-muted-foreground">Alias:</span>
+                                <div className="flex items-center gap-2">
+                                  <span className="font-mono font-semibold">{bankAccountData.data.alias}</span>
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-6 w-6"
+                                    onClick={() => copyToClipboard(bankAccountData.data.alias, 'Alias')}
+                                  >
+                                    <Copy className="w-3 h-3" />
+                                  </Button>
+                                </div>
+                              </div>
+                              <div className="flex justify-between items-center">
+                                <span className="text-muted-foreground">CUIT:</span>
+                                <span className="font-mono text-xs">{bankAccountData.data.cuit}</span>
+                              </div>
+                            </div>
+                            <div className="pt-3 border-t border-border">
+                              <p className="text-xs text-muted-foreground">
+                                <strong>Importante:</strong> Una vez realizado el pago, tu entrada quedará en estado "Pendiente" hasta que se confirme el pago. Tenés 7 días para realizar el pago.
+                              </p>
+                            </div>
+                          </CardContent>
+                        </Card>
+                      )}
+
+                      {/* Lugares de pago cercanos */}
+                      {paymentPlacesData?.data && paymentPlacesData.data.length > 0 && (
+                        <Card>
+                          <CardHeader className="pb-3">
+                            <CardTitle className="text-base flex items-center gap-2">
+                              <MapPin className="w-4 h-4" />
+                              Lugares de pago cercanos
+                            </CardTitle>
+                          </CardHeader>
+                          <CardContent>
+                            <div className="space-y-3">
+                              {paymentPlacesData.data.slice(0, 5).map((place: any, index: number) => (
+                                <div
+                                  key={index}
+                                  className="p-3 rounded-lg border border-border bg-muted/30 hover:bg-muted/50 transition-colors"
+                                >
+                                  <div className="flex items-start justify-between">
+                                    <div className="flex-1">
+                                      <div className="flex items-center gap-2 mb-1">
+                                        <p className="font-medium text-sm">{place.name}</p>
+                                        <Badge variant="outline" className="text-xs">
+                                          {place.type === 'RAPIPAGO' ? 'Rapipago' : place.type === 'PAGO_FACIL' ? 'Pago Fácil' : 'Banco'}
+                                        </Badge>
+                                      </div>
+                                      <p className="text-xs text-muted-foreground">{place.address}, {place.city}</p>
+                                      {place.distance && (
+                                        <p className="text-xs text-muted-foreground mt-1">Aprox. {place.distance}</p>
+                                      )}
+                                      {place.openingHours && (
+                                        <p className="text-xs text-muted-foreground mt-1">{place.openingHours}</p>
+                                      )}
+                                    </div>
+                                    <Button
+                                      variant="ghost"
+                                      size="icon"
+                                      className="h-8 w-8"
+                                      onClick={() => {
+                                        const url = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${place.address}, ${place.city}`)}`;
+                                        window.open(url, '_blank');
+                                      }}
+                                    >
+                                      <ExternalLink className="w-4 h-4" />
+                                    </Button>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          </CardContent>
+                        </Card>
+                      )}
+                    </div>
+                  )}
+
                   <Button
                     variant="hero"
                     size="lg"
-                    className="w-full mt-6"
+                    className="w-full"
                     onClick={handleNextStep}
                   >
                     Continuar
@@ -286,7 +519,7 @@ const Checkout = () => {
                   <div className="flex gap-3">
                     <div className="w-16 h-16 rounded-lg bg-muted overflow-hidden flex-shrink-0">
                       <img
-                        src="https://images.unsplash.com/photo-1540039155733-5bb30b53aa14?w=200&q=80"
+                        src={eventData.image || 'https://images.unsplash.com/photo-1540039155733-5bb30b53aa14?w=200&q=80'}
                         alt={eventData.title}
                         className="w-full h-full object-cover"
                       />
@@ -301,13 +534,13 @@ const Checkout = () => {
 
                 <div className="border-t border-border pt-4 space-y-2">
                   {Object.entries(selectedTickets).map(([ticketId, qty]) => {
-                    const ticket = eventData.tickets?.find((t: any) => t.id === Number(ticketId));
+                    const ticket = eventData.tickets?.find((t: any) => String(t.id) === String(ticketId));
                     return (
                       <div key={ticketId} className="flex justify-between text-sm">
                         <span className="text-muted-foreground">
                           {ticket?.name || 'Entrada'} x{qty as number}
                         </span>
-                        <span>${((ticket?.price || 45000) * (qty as number)).toLocaleString('es-AR')}</span>
+                        <span>${((ticket?.price || 0) * (qty as number)).toLocaleString('es-AR')}</span>
                       </div>
                     );
                   })}

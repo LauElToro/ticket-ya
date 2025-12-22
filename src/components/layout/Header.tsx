@@ -1,13 +1,16 @@
 import { useState, useEffect } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { Menu, X, Ticket, User } from 'lucide-react';
+import { Menu, X, Ticket, User, LayoutDashboard, LogOut } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useAuth } from '@/contexts/AuthContext';
 
 const Header = () => {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const location = useLocation();
+  const navigate = useNavigate();
+  const { isAuthenticated, user, logout, isOrganizer } = useAuth();
 
   useEffect(() => {
     const handleScroll = () => {
@@ -68,12 +71,36 @@ const Header = () => {
 
           {/* Desktop Auth Buttons */}
           <div className="hidden md:flex items-center gap-3">
-            <Button variant="ghost" size="sm">
-              Ingresar
-            </Button>
-            <Button variant="gradient" size="sm">
-              Registrarse
-            </Button>
+            {isAuthenticated ? (
+              <>
+                {isOrganizer && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => navigate('/admin/dashboard')}
+                  >
+                    <LayoutDashboard className="w-4 h-4 mr-2" />
+                    Dashboard
+                  </Button>
+                )}
+                <div className="flex items-center gap-2 px-3 py-1 rounded-lg bg-muted">
+                  <User className="w-4 h-4" />
+                  <span className="text-sm">{user?.name}</span>
+                </div>
+                <Button variant="ghost" size="sm" onClick={logout}>
+                  <LogOut className="w-4 h-4" />
+                </Button>
+              </>
+            ) : (
+              <>
+                <Button variant="ghost" size="sm" onClick={() => navigate('/login')}>
+                  Ingresar
+                </Button>
+                <Button variant="gradient" size="sm" onClick={() => navigate('/register')}>
+                  Registrarse
+                </Button>
+              </>
+            )}
           </div>
 
           {/* Mobile Menu Button */}
@@ -104,14 +131,65 @@ const Header = () => {
                   {link.label}
                 </Link>
               ))}
-              <div className="flex gap-2 mt-4 px-4">
-                <Button variant="outline" size="sm" className="flex-1">
-                  Ingresar
-                </Button>
-                <Button variant="gradient" size="sm" className="flex-1">
-                  Registrarse
-                </Button>
-              </div>
+              {isAuthenticated ? (
+                <div className="mt-4 px-4 space-y-2">
+                  {isOrganizer && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="w-full"
+                      onClick={() => {
+                        navigate('/admin/dashboard');
+                        setIsMobileMenuOpen(false);
+                      }}
+                    >
+                      <LayoutDashboard className="w-4 h-4 mr-2" />
+                      Dashboard
+                    </Button>
+                  )}
+                  <div className="px-4 py-2 rounded-lg bg-muted flex items-center gap-2">
+                    <User className="w-4 h-4" />
+                    <span className="text-sm">{user?.name}</span>
+                  </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="w-full"
+                    onClick={() => {
+                      logout();
+                      setIsMobileMenuOpen(false);
+                    }}
+                  >
+                    <LogOut className="w-4 h-4 mr-2" />
+                    Salir
+                  </Button>
+                </div>
+              ) : (
+                <div className="flex gap-2 mt-4 px-4">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="flex-1"
+                    onClick={() => {
+                      navigate('/login');
+                      setIsMobileMenuOpen(false);
+                    }}
+                  >
+                    Ingresar
+                  </Button>
+                  <Button
+                    variant="gradient"
+                    size="sm"
+                    className="flex-1"
+                    onClick={() => {
+                      navigate('/register');
+                      setIsMobileMenuOpen(false);
+                    }}
+                  >
+                    Registrarse
+                  </Button>
+                </div>
+              )}
             </nav>
           </div>
         )}

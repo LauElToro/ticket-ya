@@ -3,34 +3,119 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { AuthProvider } from "@/contexts/AuthContext";
+import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
+import ErrorBoundary from "@/components/ErrorBoundary";
 import Index from "./pages/Index";
 import Eventos from "./pages/Eventos";
 import EventoDetalle from "./pages/EventoDetalle";
 import Checkout from "./pages/Checkout";
 import Confirmacion from "./pages/Confirmacion";
 import MisEntradas from "./pages/MisEntradas";
+import TicketDetalle from "./pages/TicketDetalle";
+import ComoFunciona from "./pages/ComoFunciona";
+import Ayuda from "./pages/Ayuda";
+import Dashboard from "./pages/admin/Dashboard";
+import EventsList from "./pages/admin/EventsList";
+import EventForm from "./pages/admin/EventForm";
+import EventStats from "./pages/admin/EventStats";
+import UsersList from "./pages/admin/UsersList";
+import Login from "./pages/Login";
+import Register from "./pages/Register";
 import NotFound from "./pages/NotFound";
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      refetchOnWindowFocus: false,
+      retry: 1,
+      staleTime: 30000,
+      onError: (error) => {
+        console.error('Query error:', error);
+      },
+    },
+  },
+});
 
 const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <Toaster />
-      <Sonner />
-      <BrowserRouter>
-        <Routes>
-          <Route path="/" element={<Index />} />
-          <Route path="/eventos" element={<Eventos />} />
-          <Route path="/evento/:id" element={<EventoDetalle />} />
-          <Route path="/checkout" element={<Checkout />} />
-          <Route path="/confirmacion" element={<Confirmacion />} />
-          <Route path="/mis-entradas" element={<MisEntradas />} />
-          <Route path="*" element={<NotFound />} />
-        </Routes>
-      </BrowserRouter>
-    </TooltipProvider>
-  </QueryClientProvider>
+  <ErrorBoundary>
+    <QueryClientProvider client={queryClient}>
+      <AuthProvider>
+        <TooltipProvider>
+          <Toaster />
+          <Sonner />
+          <BrowserRouter>
+            <Routes>
+            <Route path="/" element={<Index />} />
+            <Route path="/eventos" element={<Eventos />} />
+            <Route path="/evento/:id" element={<EventoDetalle />} />
+            <Route path="/checkout" element={<Checkout />} />
+            <Route path="/confirmacion" element={<Confirmacion />} />
+            <Route path="/mis-entradas" element={<MisEntradas />} />
+            <Route path="/entrada/:id" element={<TicketDetalle />} />
+            <Route path="/como-funciona" element={<ComoFunciona />} />
+            <Route path="/ayuda" element={<Ayuda />} />
+            <Route path="/login" element={<Login />} />
+            
+            {/* Admin routes */}
+            <Route
+              path="/admin/dashboard"
+              element={
+                <ProtectedRoute requireOrganizer>
+                  <Dashboard />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/admin/events"
+              element={
+                <ProtectedRoute requireOrganizer>
+                  <EventsList />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/admin/events/new"
+              element={
+                <ProtectedRoute requireOrganizer>
+                  <EventForm />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/admin/events/:id/edit"
+              element={
+                <ProtectedRoute requireOrganizer>
+                  <EventForm />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/admin/events/:id"
+              element={
+                <ProtectedRoute requireOrganizer>
+                  <EventStats />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/admin/users"
+              element={
+                <ProtectedRoute requireAdmin>
+                  <UsersList />
+                </ProtectedRoute>
+              }
+            />
+            
+            <Route path="/login" element={<Login />} />
+            <Route path="/register" element={<Register />} />
+            <Route path="*" element={<NotFound />} />
+            </Routes>
+          </BrowserRouter>
+        </TooltipProvider>
+      </AuthProvider>
+    </QueryClientProvider>
+  </ErrorBoundary>
 );
 
 export default App;

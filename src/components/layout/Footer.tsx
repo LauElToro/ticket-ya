@@ -84,7 +84,7 @@ const Footer = () => {
         </div>
 
         <div className="border-t border-primary-foreground/20 mt-8 pt-8 text-center text-sm text-primary-foreground/60">
-          <p>© 2024 TicketAR. Todos los derechos reservados. Hecho con 💙 en Argentina.</p>
+          <p>© 2024 TicketAR. Todos los derechos reservados <Link to="https://www.linkedin.com/in/lautaro-figueroa-b0702b26a/" target="_blank" className="text-secondary hover:text-secondary-foreground transition-colors"> Lautaro Figueroa.</Link></p>
         </div>
       </div>
     </footer>
