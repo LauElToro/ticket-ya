@@ -54,12 +54,13 @@ const TicketDetalle = () => {
   // Cargar QR
   const { isLoading: isLoadingQR } = useQuery({
     queryKey: ['ticket-qr', id],
-    queryFn: () => ticketsApi.getQR(id!),
-    enabled: !!id && !!ticketResponse?.data,
-    onSuccess: (blob) => {
+    queryFn: async () => {
+      const blob = await ticketsApi.getQR(id!);
       const url = URL.createObjectURL(blob);
       setQrImageUrl(url);
+      return blob;
     },
+    enabled: !!id && !!ticketResponse?.data,
   });
 
   const ticket = useMemo(() => {
@@ -512,7 +513,7 @@ const TicketDetalle = () => {
                             <DialogTitle>Transferir entrada</DialogTitle>
                             <DialogDescription>
                               La entrada dejará de ser tuya y pasará a ser propiedad del usuario receptor. 
-                              El usuario debe estar registrado en Ticket-Ya.
+                              El usuario debe estar registrado en Pulso Experiences.
                             </DialogDescription>
                           </DialogHeader>
                           <Tabs defaultValue="email" className="w-full">
@@ -539,7 +540,7 @@ const TicketDetalle = () => {
                                   className="mt-2"
                                 />
                                 <p className="text-xs text-muted-foreground mt-2">
-                                  El usuario debe estar registrado en Ticket-Ya
+                                  El usuario debe estar registrado en Pulso Experiences
                                 </p>
                               </div>
                               <Button

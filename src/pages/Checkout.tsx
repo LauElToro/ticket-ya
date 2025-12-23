@@ -8,16 +8,14 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { ShieldCheck, CreditCard, Wallet, Banknote, Building2, Check, ArrowLeft, Loader2, MapPin, ExternalLink, Copy, CheckCircle } from 'lucide-react';
+import { ShieldCheck, Wallet, Banknote, Building2, Check, ArrowLeft, Loader2, MapPin, ExternalLink, Copy, CheckCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { toast } from '@/hooks/use-toast';
-import { paymentPlacesApi, ordersApi, api } from '@/lib/api';
+import { paymentPlacesApi, ordersApi, paymentApi, api } from '@/lib/api';
 import { useAuth } from '@/contexts/AuthContext';
 
 const paymentMethods = [
   { id: 'mercadopago', name: 'MercadoPago', icon: Wallet, description: 'Hasta 12 cuotas sin interés' },
-  { id: 'credit', name: 'Tarjeta de crédito', icon: CreditCard, description: 'Hasta 6 cuotas' },
-  { id: 'debit', name: 'Tarjeta de débito', icon: CreditCard, description: 'Débito inmediato' },
   { id: 'cash', name: 'Efectivo', icon: Banknote, description: 'Rapipago, Pago Fácil' },
   { id: 'transfer', name: 'Transferencia', icon: Building2, description: 'Home banking' },
 ];
@@ -31,15 +29,28 @@ const Checkout = () => {
   const [selectedPayment, setSelectedPayment] = useState('mercadopago');
   
   const [formData, setFormData] = useState({
-    name: '',
-    email: '',
-    dni: '',
-    phone: '',
+    name: user?.name || '',
+    email: user?.email || '',
+    dni: user?.dni || '',
+    phone: user?.phone || '',
   });
+
+  // Pre-llenar formulario cuando el usuario se carga
+  useEffect(() => {
+    if (user) {
+      setFormData({
+        name: user.name || '',
+        email: user.email || '',
+        dni: user.dni || '',
+        phone: user.phone || '',
+      });
+    }
+  }, [user]);
 
   // Obtener datos del estado de navegación
   const eventData = location.state?.event;
   const selectedTickets = location.state?.tickets || {};
+  const refCode = location.state?.refCode; // Código de referido
 
   // Si no hay datos, redirigir a eventos
   if (!eventData || !selectedTickets || Object.keys(selectedTickets).length === 0) {
@@ -120,8 +131,6 @@ const Checkout = () => {
       // Mapear método de pago del frontend al backend
       const paymentMethodMap: Record<string, string> = {
         'mercadopago': 'MERCADOPAGO',
-        'credit': 'MERCADOPAGO',
-        'debit': 'MERCADOPAGO',
         'cash': 'CASH',
         'transfer': 'BANK_TRANSFER',
       };
@@ -136,21 +145,65 @@ const Checkout = () => {
         eventId: eventData.id,
         tickets: ticketsData,
         paymentMethod: backendPaymentMethod,
+        referidoId: refCode || undefined, // Pasar el código de referido si existe
       });
 
-      setIsProcessing(false);
-      
-      navigate('/confirmacion', { 
-        state: { 
-          event: eventData, 
-          tickets: selectedTickets, 
-          formData,
-          paymentMethod: selectedPayment,
-          paymentPlaces: paymentPlacesData?.data,
-          bankAccount: bankAccountData?.data,
-          order: orderResponse.data,
-        } 
-      });
+      // Si es MercadoPago, crear preferencia y redirigir
+      if (selectedPayment === 'mercadopago') {
+        try {
+          // Construir items para MercadoPago
+          const items = ticketsData.map((ticket: any) => {
+            const ticketType = eventData.tickets.find((t: any) => String(t.id) === ticket.ticketTypeId);
+            return {
+              title: `${ticketType?.name || 'Entrada'} - ${eventData.title}`,
+              quantity: ticket.quantity,
+              unit_price: ticketType?.price || 0,
+            };
+          });
+
+          // Crear preferencia de MercadoPago
+          const preferenceResponse = await paymentApi.createMercadoPagoPreference({
+            orderId: orderResponse.data.id,
+            payerEmail: formData.email || user?.email || '',
+            payerName: formData.name || user?.name || '',
+            payerDni: formData.dni || user?.dni || '',
+            tickets: ticketsData, // Enviar datos de tickets
+          });
+
+          setIsProcessing(false);
+
+          // Redirigir a MercadoPago
+          const initPoint = preferenceResponse.data.sandbox_init_point || preferenceResponse.data.init_point;
+          if (initPoint) {
+            window.location.href = initPoint;
+          } else {
+            throw new Error('No se pudo obtener la URL de pago de MercadoPago');
+          }
+        } catch (error: any) {
+          setIsProcessing(false);
+          toast({
+            title: 'Error al crear el pago',
+            description: error.message || 'No se pudo crear la preferencia de MercadoPago',
+            variant: 'destructive',
+          });
+          return;
+        }
+      } else {
+        // Para otros métodos de pago, redirigir a confirmación
+        setIsProcessing(false);
+        
+        navigate('/confirmacion', { 
+          state: { 
+            event: eventData, 
+            tickets: selectedTickets, 
+            formData,
+            paymentMethod: selectedPayment,
+            paymentPlaces: paymentPlacesData?.data,
+            bankAccount: bankAccountData?.data,
+            order: orderResponse.data,
+          } 
+        });
+      }
     } catch (error: any) {
       setIsProcessing(false);
       

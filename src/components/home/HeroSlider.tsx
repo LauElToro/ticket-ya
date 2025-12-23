@@ -88,7 +88,6 @@ const HeroSlider = () => {
     return (
       <section className="relative h-[600px] md:h-[700px] overflow-hidden flex items-center justify-center bg-gradient-to-r from-primary/20 to-secondary/20">
         <div className="text-center">
-          <h1 className="text-4xl md:text-6xl font-bold mb-4">Ticket-Ya</h1>
           <p className="text-xl text-muted-foreground">Tu plataforma de entradas</p>
           {error && (
             <p className="text-sm text-muted-foreground mt-4">No se pudieron cargar los eventos destacados</p>

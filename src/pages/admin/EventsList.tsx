@@ -21,15 +21,35 @@ const EventsList = () => {
 
   const events = data?.data || [];
 
-  const handleDelete = async (id: string) => {
-    if (!confirm('¿Estás seguro de eliminar este evento?')) return;
+  const handleDelete = async (id: string, eventDate?: string) => {
+    const now = new Date();
+    const eventDateTime = eventDate ? new Date(eventDate) : null;
+    const hasPassed = eventDateTime && eventDateTime < now;
+    
+    if (hasPassed) {
+      toast({ 
+        title: 'No se puede borrar', 
+        description: 'Los eventos que ya pasaron no se pueden borrar. Quedan guardados en el historial.',
+        variant: 'destructive' 
+      });
+      return;
+    }
+    
+    if (!confirm('¿Estás seguro de eliminar este evento? Esta acción no se puede deshacer.')) return;
     
     try {
       await adminApi.deleteEvent(id);
       toast({ title: 'Evento eliminado exitosamente' });
       refetch();
     } catch (error: any) {
-      toast({ title: 'Error al eliminar evento', variant: 'destructive' });
+      const errorMessage = error.message || 'Error al eliminar evento';
+      toast({ 
+        title: 'Error al eliminar evento', 
+        description: errorMessage.includes('ya pasó') 
+          ? 'Los eventos que ya pasaron no se pueden borrar. Quedan guardados en el historial.'
+          : errorMessage,
+        variant: 'destructive' 
+      });
     }
   };
 
@@ -120,7 +140,8 @@ const EventsList = () => {
                         <Button
                           variant="outline"
                           size="sm"
-                          onClick={() => handleDelete(event.id)}
+                          onClick={() => handleDelete(event.id, event.date)}
+                          title={new Date(event.date) < new Date() ? 'Los eventos que ya pasaron no se pueden borrar' : 'Eliminar evento'}
                         >
                           <Trash2 className="w-4 h-4" />
                         </Button>

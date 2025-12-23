@@ -9,7 +9,7 @@ const steps = [
   {
     icon: CreditCard,
     title: 'Pagá de forma segura',
-    description: 'Elegí tu medio de pago favorito: tarjeta, MercadoPago, efectivo o transferencia.',
+    description: 'Elegí tu medio de pago favorito: MercadoPago (tarjetas y más), efectivo o transferencia.',
   },
   {
     icon: QrCode,

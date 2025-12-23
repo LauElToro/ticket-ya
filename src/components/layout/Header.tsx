@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { Menu, X, Ticket, User, LayoutDashboard, LogOut } from 'lucide-react';
+import { Menu, X, User, LayoutDashboard, LogOut } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/contexts/AuthContext';
 
@@ -24,6 +24,7 @@ const Header = () => {
     { href: '/eventos', label: 'Eventos' },
     { href: '/como-funciona', label: 'Cómo funciona' },
     { href: '/ayuda', label: 'Ayuda' },
+    { href: '/favoritos', label: 'Favoritos' },
     { href: '/mis-entradas', label: 'Mis entradas' },
   ];
 
@@ -32,20 +33,17 @@ const Header = () => {
       className={cn(
         'fixed top-0 left-0 right-0 z-50 transition-all duration-300',
         isScrolled
-          ? 'bg-card/95 backdrop-blur-md shadow-soft'
+          ? 'bg-black/95 backdrop-blur-md shadow-soft'
           : 'bg-transparent'
       )}
     >
       <div className="container mx-auto px-4">
         <div className="flex items-center justify-between h-16 md:h-20">
           {/* Logo */}
-          <Link to="/" className="flex items-center gap-2 group">
-            <div className="w-10 h-10 rounded-xl bg-primary flex items-center justify-center transition-transform group-hover:scale-105">
-              <Ticket className="w-6 h-6 text-primary-foreground" />
+          <Link to="/" className="flex items-center gap-3 group">
+            <div className="w-12 h-12 rounded-full bg-black flex items-center justify-center transition-transform group-hover:scale-105 shadow-lg">
+              <span className="text-white font-bold text-sm tracking-tight">PULSO</span>
             </div>
-            <span className="text-xl font-bold text-foreground">
-              Ticket<span className="text-secondary">AR</span>
-            </span>
           </Link>
 
           {/* Desktop Navigation */}
@@ -58,7 +56,7 @@ const Header = () => {
                   'text-sm font-medium transition-colors duration-200 relative',
                   location.pathname === link.href
                     ? 'text-secondary'
-                    : 'text-muted-foreground hover:text-foreground'
+                    : isScrolled ? 'text-white/80 hover:text-white' : 'text-muted-foreground hover:text-foreground'
                 )}
               >
                 {link.label}
@@ -105,7 +103,10 @@ const Header = () => {
 
           {/* Mobile Menu Button */}
           <button
-            className="md:hidden p-2 text-foreground"
+            className={cn(
+              "md:hidden p-2 transition-colors",
+              isScrolled ? "text-white" : "text-foreground"
+            )}
             onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
           >
             {isMobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}

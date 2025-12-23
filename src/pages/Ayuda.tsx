@@ -36,7 +36,7 @@ const Ayuda = () => {
       faqs: [
         {
           question: '¿Qué métodos de pago aceptan?',
-          answer: 'Aceptamos MercadoPago (tarjetas de crédito, débito y dinero en cuenta), transferencia bancaria y pago en efectivo en puntos de pago cercanos como Rapipago y Pago Fácil.',
+          answer: 'Aceptamos MercadoPago (que incluye tarjetas de crédito, débito y dinero en cuenta), transferencia bancaria y pago en efectivo en puntos de pago cercanos como Rapipago y Pago Fácil.',
         },
         {
           question: '¿Cuánto tiempo tengo para pagar?',
@@ -66,7 +66,7 @@ const Ayuda = () => {
         },
         {
           question: '¿Puedo transferir mis entradas?',
-          answer: 'Sí, podés transferir tus entradas a otros usuarios registrados en Ticket-Ya mediante QR o email. La transferencia debe ser aceptada por el destinatario.',
+          answer: 'Sí, podés transferir tus entradas a otros usuarios registrados en Pulso Experiences mediante QR o email. La transferencia debe ser aceptada por el destinatario.',
         },
         {
           question: '¿Cuánto tiempo duran mis entradas?',
@@ -127,7 +127,7 @@ const Ayuda = () => {
       icon: Shield,
       faqs: [
         {
-          question: '¿Es seguro comprar en Ticket-Ya?',
+          question: '¿Es seguro comprar en Pulso Experiences?',
           answer: 'Sí, utilizamos los más altos estándares de seguridad para proteger tus datos y pagos. Todas las transacciones están encriptadas.',
         },
         {
@@ -261,7 +261,7 @@ const Ayuda = () => {
                 <div className="text-center p-6 rounded-xl bg-muted/50">
                   <Mail className="w-8 h-8 text-primary mx-auto mb-3" />
                   <h3 className="font-semibold mb-2">Email</h3>
-                  <p className="text-sm text-muted-foreground">soporte@ticket-ya.com</p>
+                  <p className="text-sm text-muted-foreground">soporte@pulsoexperiences.com</p>
                   <p className="text-xs text-muted-foreground mt-1">Respuesta en 24hs</p>
                 </div>
                 <div className="text-center p-6 rounded-xl bg-muted/50">
@@ -333,7 +333,7 @@ const Ayuda = () => {
               <CardContent className="p-6 text-center">
                 <HelpCircle className="w-8 h-8 text-primary mx-auto mb-3" />
                 <h3 className="font-semibold mb-2">Cómo funciona</h3>
-                <p className="text-sm text-muted-foreground">Aprendé más sobre Ticket-Ya</p>
+                <p className="text-sm text-muted-foreground">Aprendé más sobre Pulso Experiences</p>
               </CardContent>
             </Card>
           </div>

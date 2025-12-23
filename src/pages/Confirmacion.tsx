@@ -1,18 +1,54 @@
-import { useLocation, Link } from 'react-router-dom';
+import { useLocation, Link, useSearchParams, useNavigate } from 'react-router-dom';
+import { useEffect, useState } from 'react';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
-import { CheckCircle, Download, Mail, Calendar, MapPin, QrCode, AlertCircle, Banknote, Copy, ExternalLink, Clock } from 'lucide-react';
+import { CheckCircle, Download, Mail, Calendar, MapPin, QrCode, AlertCircle, Banknote, Copy, ExternalLink, Clock, Loader2, XCircle } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 
 const Confirmacion = () => {
   const location = useLocation();
+  const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const [paymentStatus, setPaymentStatus] = useState<string | null>(null);
+  const [orderId, setOrderId] = useState<string | null>(null);
+  const [countdown, setCountdown] = useState(10);
   const { event, tickets, formData, paymentMethod, paymentPlaces, bankAccount } = location.state || {};
   
   const isCashPayment = paymentMethod === 'cash';
+
+  // Obtener parámetros de la URL (callbacks de MercadoPago)
+  useEffect(() => {
+    const status = searchParams.get('status');
+    const orderIdParam = searchParams.get('order_id');
+
+    if (status && orderIdParam) {
+      setPaymentStatus(status);
+      setOrderId(orderIdParam);
+    }
+  }, [searchParams]);
+
+  // Redirección automática después de 10 segundos si viene de MercadoPago
+  useEffect(() => {
+    // Solo redirigir si viene de un callback de MercadoPago (tiene status en la URL)
+    if (paymentStatus) {
+      const timer = setInterval(() => {
+        setCountdown((prev) => {
+          if (prev <= 1) {
+            clearInterval(timer);
+            navigate('/'); // Redirect to home
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+
+      return () => clearInterval(timer);
+    }
+  }, [paymentStatus, navigate]);
 
   const eventData = event || {
     title: 'Coldplay - Music of the Spheres Tour',
@@ -64,6 +100,11 @@ const Confirmacion = () => {
                 <Clock className="w-3 h-3 mr-1" />
                 Pago pendiente
               </Badge>
+            )}
+            {paymentStatus && (
+              <p className="text-sm text-muted-foreground mt-4">
+                Serás redirigido al inicio en {countdown} segundos...
+              </p>
             )}
           </div>
 

@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { Ticket, Instagram, Twitter, Facebook, Mail, Phone } from 'lucide-react';
+import { Instagram, Mail, Phone } from 'lucide-react';
 
 const Footer = () => {
   return (
@@ -9,26 +9,23 @@ const Footer = () => {
           {/* Logo & Description */}
           <div className="space-y-4">
             <Link to="/" className="flex items-center gap-2">
-              <div className="w-10 h-10 rounded-xl bg-secondary flex items-center justify-center">
-                <Ticket className="w-6 h-6 text-secondary-foreground" />
+              <div className="w-10 h-10 rounded-full bg-black flex items-center justify-center">
+                <span className="text-white font-bold text-xs tracking-tight">PULSO</span>
               </div>
-              <span className="text-xl font-bold">
-                Ticket<span className="text-secondary">AR</span>
-              </span>
             </Link>
             <p className="text-primary-foreground/70 text-sm">
               La plataforma líder de venta de entradas en Argentina. 
               Comprá tus tickets de forma segura y recibilos al instante.
             </p>
             <div className="flex gap-4">
-              <a href="#" className="text-primary-foreground/70 hover:text-secondary transition-colors">
+              <a 
+                href="https://www.instagram.com/pulso.experiences" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="text-primary-foreground/70 hover:text-secondary transition-colors"
+                aria-label="Instagram de Pulso Experiences"
+              >
                 <Instagram className="w-5 h-5" />
-              </a>
-              <a href="#" className="text-primary-foreground/70 hover:text-secondary transition-colors">
-                <Twitter className="w-5 h-5" />
-              </a>
-              <a href="#" className="text-primary-foreground/70 hover:text-secondary transition-colors">
-                <Facebook className="w-5 h-5" />
               </a>
             </div>
           </div>
@@ -73,7 +70,7 @@ const Footer = () => {
             <ul className="space-y-3">
               <li className="flex items-center gap-2 text-sm text-primary-foreground/70">
                 <Mail className="w-4 h-4" />
-                soporte@ticketar.com.ar
+                soporte@pulsoexperiences.com
               </li>
               <li className="flex items-center gap-2 text-sm text-primary-foreground/70">
                 <Phone className="w-4 h-4" />
@@ -84,7 +81,7 @@ const Footer = () => {
         </div>
 
         <div className="border-t border-primary-foreground/20 mt-8 pt-8 text-center text-sm text-primary-foreground/60">
-          <p>© 2024 TicketAR. Todos los derechos reservados <Link to="https://www.linkedin.com/in/lautaro-figueroa-b0702b26a/" target="_blank" className="text-secondary hover:text-secondary-foreground transition-colors"> Lautaro Figueroa.</Link></p>
+          <p>© 2024 Pulso Experiences. Todos los derechos reservados <Link to="https://www.linkedin.com/in/lautaro-figueroa-b0702b26a/" target="_blank" className="text-secondary hover:text-secondary-foreground transition-colors"> Lautaro Figueroa.</Link></p>
         </div>
       </div>
     </footer>

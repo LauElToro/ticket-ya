@@ -15,6 +15,7 @@ import MisEntradas from "./pages/MisEntradas";
 import TicketDetalle from "./pages/TicketDetalle";
 import ComoFunciona from "./pages/ComoFunciona";
 import Ayuda from "./pages/Ayuda";
+import Favoritos from "./pages/Favoritos";
 import Dashboard from "./pages/admin/Dashboard";
 import EventsList from "./pages/admin/EventsList";
 import EventForm from "./pages/admin/EventForm";
@@ -23,6 +24,8 @@ import UsersList from "./pages/admin/UsersList";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 import NotFound from "./pages/NotFound";
+import VendedorDashboard from "./pages/vendedor/Dashboard";
+import PorteroScan from "./pages/portero/Scan";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -30,9 +33,6 @@ const queryClient = new QueryClient({
       refetchOnWindowFocus: false,
       retry: 1,
       staleTime: 30000,
-      onError: (error) => {
-        console.error('Query error:', error);
-      },
     },
   },
 });
@@ -55,6 +55,7 @@ const App = () => (
             <Route path="/entrada/:id" element={<TicketDetalle />} />
             <Route path="/como-funciona" element={<ComoFunciona />} />
             <Route path="/ayuda" element={<Ayuda />} />
+            <Route path="/favoritos" element={<Favoritos />} />
             <Route path="/login" element={<Login />} />
             
             {/* Admin routes */}
@@ -109,6 +110,27 @@ const App = () => (
             
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
+            
+            {/* Vendedor routes */}
+            <Route
+              path="/vendedor/dashboard"
+              element={
+                <ProtectedRoute>
+                  <VendedorDashboard />
+                </ProtectedRoute>
+              }
+            />
+            
+            {/* Portero routes */}
+            <Route
+              path="/portero/scan"
+              element={
+                <ProtectedRoute>
+                  <PorteroScan />
+                </ProtectedRoute>
+              }
+            />
+            
             <Route path="*" element={<NotFound />} />
             </Routes>
           </BrowserRouter>

@@ -1,26 +1,12 @@
-import { CreditCard, Wallet, Banknote, Building2, ShieldCheck } from 'lucide-react';
+import { Wallet, Banknote, Building2, ShieldCheck } from 'lucide-react';
 
 const paymentMethods = [
   {
     icon: Wallet,
     name: 'MercadoPago',
-    description: 'Pagá con tu cuenta de MercadoPago. Hasta 12 cuotas sin interés.',
+    description: 'Pagá con tu cuenta de MercadoPago. Tarjetas de crédito y débito. Hasta 12 cuotas sin interés.',
     color: 'from-[#00AEEF]/20 to-[#00AEEF]/5',
     iconColor: 'text-[#00AEEF]',
-  },
-  {
-    icon: CreditCard,
-    name: 'Tarjeta de crédito',
-    description: 'Visa, Mastercard, American Express. Hasta 6 cuotas.',
-    color: 'from-secondary/20 to-secondary/5',
-    iconColor: 'text-secondary',
-  },
-  {
-    icon: CreditCard,
-    name: 'Tarjeta de débito',
-    description: 'Pagá directo desde tu cuenta bancaria de forma segura.',
-    color: 'from-primary/20 to-primary/5',
-    iconColor: 'text-primary',
   },
   {
     icon: Banknote,
@@ -55,7 +41,7 @@ const PaymentMethods = () => {
           </p>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4 md:gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
           {paymentMethods.map((method, index) => {
             const Icon = method.icon;
             return (

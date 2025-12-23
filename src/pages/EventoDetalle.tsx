@@ -1,27 +1,66 @@
 import { useState, useMemo } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
 import { Button } from '@/components/ui/button';
 import { Calendar, MapPin, Clock, Users, Share2, Heart, Minus, Plus, ShieldCheck, Info, Loader2, ExternalLink, Navigation, Ticket as TicketIcon, Star } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
-import { eventsApi } from '@/lib/api';
+import { eventsApi, favoriteApi } from '@/lib/api';
 import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
+import { useAuth } from '@/contexts/AuthContext';
 
 const EventoDetalle = () => {
   const { id } = useParams();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const { user } = useAuth();
+  const queryClient = useQueryClient();
   const [selectedTickets, setSelectedTickets] = useState<Record<string, number>>({});
-  const [isFavorite, setIsFavorite] = useState(false);
+  const refCode = searchParams.get('ref'); // Código de referido
+  const privateLink = searchParams.get('link'); // Link privado para eventos privados
 
   // Obtener evento de la API
   const { data: eventResponse, isLoading, error } = useQuery({
-    queryKey: ['event', id],
-    queryFn: () => eventsApi.getById(id!),
+    queryKey: ['event', id, privateLink],
+    queryFn: () => eventsApi.getById(id!, privateLink || undefined),
     enabled: !!id,
     retry: 1,
+  });
+
+  // Verificar si está en favoritos
+  const { data: favoriteCheck } = useQuery({
+    queryKey: ['favorite-check', id],
+    queryFn: () => favoriteApi.checkFavorite(id!),
+    enabled: !!id && !!user,
+  });
+
+  const isFavorite = favoriteCheck?.data?.isFavorite || false;
+
+  // Mutaciones para agregar/remover favoritos
+  const toggleFavoriteMutation = useMutation({
+    mutationFn: async () => {
+      if (isFavorite) {
+        return favoriteApi.remove(id!);
+      } else {
+        return favoriteApi.add(id!);
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['favorite-check', id] });
+      queryClient.invalidateQueries({ queryKey: ['favorites'] });
+      toast({
+        title: isFavorite ? 'Removido de favoritos' : 'Agregado a favoritos',
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: 'Error',
+        description: error.response?.data?.error?.message || 'No se pudo actualizar favoritos',
+        variant: 'destructive',
+      });
+    },
   });
 
   const eventData = useMemo(() => {
@@ -39,6 +78,55 @@ const EventoDetalle = () => {
       ? `${import.meta.env.VITE_BACKEND_URL || 'http://localhost:3000'}${event.image}`
       : 'https://images.unsplash.com/photo-1540039155733-5bb30b53aa14?w=1920&q=80';
 
+    // Obtener la tanda activa (la que está en el rango de fechas actual)
+    const now = new Date();
+    let activeTanda = event.tandas?.find((tanda: any) => {
+      if (!tanda.isActive) return false;
+      const startDate = tanda.startDate ? new Date(tanda.startDate) : null;
+      const endDate = tanda.endDate ? new Date(tanda.endDate) : null;
+      
+      if (startDate && endDate) {
+        return now >= startDate && now <= endDate;
+      } else if (startDate) {
+        return now >= startDate;
+      } else if (endDate) {
+        return now <= endDate;
+      }
+      // Si no tiene fechas, considerar activa si isActive es true
+      return true;
+    });
+    
+    // Si no hay tanda activa, usar la primera tanda activa o la primera disponible
+    if (!activeTanda) {
+      activeTanda = event.tandas?.find((t: any) => t.isActive) || event.tandas?.[0];
+    }
+
+    // Mapear tipos de entrada con precios desde la tanda activa
+    const tickets = event.ticketTypes?.map((tt: any) => {
+      // Buscar el precio en la tanda activa
+      let price = 0;
+      if (activeTanda?.tandaTicketTypes && Array.isArray(activeTanda.tandaTicketTypes)) {
+        const tandaTicketType = activeTanda.tandaTicketTypes.find((ttt: any) => {
+          // Intentar coincidir por ticketTypeId o por el objeto ticketType
+          return ttt.ticketTypeId === tt.id || 
+                 ttt.ticketType?.id === tt.id ||
+                 ttt.ticketTypeId === String(tt.id) ||
+                 String(ttt.ticketTypeId) === String(tt.id);
+        });
+        if (tandaTicketType && tandaTicketType.price !== undefined && tandaTicketType.price !== null) {
+          price = Number(tandaTicketType.price);
+          if (isNaN(price)) price = 0;
+        }
+      }
+
+      return {
+        id: String(tt.id),
+        name: tt.name,
+        price: price,
+        available: tt.availableQty || 0,
+      };
+    }) || [];
+
     return {
       id: event.id,
       title: event.title,
@@ -54,12 +142,7 @@ const EventoDetalle = () => {
       description: event.description || '',
       latitude: (event as any).latitude,
       longitude: (event as any).longitude,
-      tickets: event.ticketTypes?.map((tt: any) => ({
-        id: String(tt.id),
-        name: tt.name,
-        price: Number(tt.price),
-        available: tt.availableQty,
-      })) || [],
+      tickets: tickets,
     };
   }, [eventResponse]);
 
@@ -97,7 +180,7 @@ const EventoDetalle = () => {
       });
       return;
     }
-    navigate('/checkout', { state: { event: eventData, tickets: selectedTickets } });
+    navigate('/checkout', { state: { event: eventData, tickets: selectedTickets, refCode } });
   };
 
   if (isLoading) {
@@ -358,20 +441,22 @@ const EventoDetalle = () => {
                     <h2 className="text-xl font-semibold">Entradas</h2>
                   </div>
                   <div className="flex gap-2">
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => {
-                        setIsFavorite(!isFavorite);
-                        toast({
-                          title: isFavorite ? 'Removido de favoritos' : 'Agregado a favoritos',
-                        });
-                      }}
-                      className={isFavorite ? 'text-destructive hover:text-destructive' : ''}
-                      title={isFavorite ? 'Remover de favoritos' : 'Agregar a favoritos'}
-                    >
-                      <Heart className={`w-5 h-5 transition-all ${isFavorite ? 'fill-current scale-110' : ''}`} />
-                    </Button>
+                    {user && (
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => toggleFavoriteMutation.mutate()}
+                        disabled={toggleFavoriteMutation.isPending}
+                        className={isFavorite ? 'text-destructive hover:text-destructive' : ''}
+                        title={isFavorite ? 'Remover de favoritos' : 'Agregar a favoritos'}
+                      >
+                        {toggleFavoriteMutation.isPending ? (
+                          <Loader2 className="w-5 h-5 animate-spin" />
+                        ) : (
+                          <Heart className={`w-5 h-5 transition-all ${isFavorite ? 'fill-current scale-110' : ''}`} />
+                        )}
+                      </Button>
+                    )}
                     <Button 
                       variant="ghost" 
                       size="icon" 

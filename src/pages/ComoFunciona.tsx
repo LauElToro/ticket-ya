@@ -86,7 +86,7 @@ const ComoFunciona = () => {
   const paymentMethods = [
     {
       name: 'MercadoPago',
-      description: 'Pago online seguro con tarjeta de crédito, débito o dinero en cuenta.',
+      description: 'Pago online seguro con MercadoPago. Incluye tarjetas de crédito, débito y dinero en cuenta.',
       icon: '💳',
     },
     {
@@ -110,7 +110,7 @@ const ComoFunciona = () => {
         <section className="container mx-auto px-4 py-12">
           <div className="text-center max-w-3xl mx-auto mb-12">
             <h1 className="text-4xl md:text-5xl font-bold mb-4 bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
-              Cómo funciona Ticket-Ya
+              Cómo funciona Pulso Experiences
             </h1>
             <p className="text-xl text-muted-foreground">
               Comprá entradas para tus eventos favoritos de forma rápida, segura y sencilla

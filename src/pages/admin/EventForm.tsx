@@ -12,11 +12,24 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { toast } from '@/hooks/use-toast';
 import { Loader2, Plus, Trash2, ArrowLeft, Upload, MapPin, Image as ImageIcon, Calendar, Clock, Building2, MapPin as MapPinIcon, Ticket, AlertCircle, CheckCircle2 } from 'lucide-react';
 
+interface TandaTicketType {
+  name: string; // Nombre del tipo de entrada
+  price: string; // Precio en esta tanda
+  quantity: string; // Cantidad disponible en esta tanda
+}
+
+interface Tanda {
+  id?: string; // ID opcional para tandas existentes
+  name: string;
+  startDate: string;
+  endDate: string;
+  ticketTypes: TandaTicketType[]; // Tipos de entrada con precios para esta tanda
+}
+
 interface TicketType {
   id?: string; // ID opcional para tipos existentes
   name: string;
-  price: string;
-  totalQty: string;
+  totalQty: string; // Cantidad total (suma de todas las tandas)
 }
 
 const EventForm = () => {
@@ -38,11 +51,14 @@ const EventForm = () => {
     image: '',
     latitude: '',
     longitude: '',
+    isPublic: true, // Por defecto público
   });
 
   const [ticketTypes, setTicketTypes] = useState<TicketType[]>([
-    { name: '', price: '', totalQty: '' },
+    { name: '', totalQty: '' },
   ]);
+
+  const [tandas, setTandas] = useState<Tanda[]>([]);
 
   const [isUploadingImage, setIsUploadingImage] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -89,6 +105,7 @@ const EventForm = () => {
         image: event.image || '',
         latitude: event.latitude ? String(event.latitude) : '',
         longitude: event.longitude ? String(event.longitude) : '',
+        isPublic: event.isPublic !== undefined ? event.isPublic : true,
       });
       
       // Cargar tipos de entrada
@@ -96,16 +113,33 @@ const EventForm = () => {
         console.log('Cargando tipos de entrada:', event.ticketTypes);
         setTicketTypes(
           event.ticketTypes.map((tt: any) => ({
-            id: tt.id, // Incluir ID para identificar tipos existentes
+            id: tt.id,
             name: tt.name || '',
-            price: String(tt.price || 0),
             totalQty: String(tt.totalQty || 0),
           }))
         );
       } else {
-        // Si no hay tipos de entrada, mantener uno vacío
-        console.log('No hay tipos de entrada, usando uno vacío');
-        setTicketTypes([{ name: '', price: '', totalQty: '' }]);
+        setTicketTypes([{ name: '', totalQty: '' }]);
+      }
+
+      // Cargar tandas
+      if (event.tandas && event.tandas.length > 0) {
+        console.log('Cargando tandas:', event.tandas);
+        setTandas(
+          event.tandas.map((tanda: any) => ({
+            id: tanda.id,
+            name: tanda.name || '',
+            startDate: tanda.startDate ? new Date(tanda.startDate).toISOString().split('T')[0] : '',
+            endDate: tanda.endDate ? new Date(tanda.endDate).toISOString().split('T')[0] : '',
+            ticketTypes: tanda.tandaTicketTypes?.map((ttt: any) => ({
+              name: ttt.ticketType.name,
+              price: String(ttt.price || 0),
+              quantity: String(ttt.quantity || 0),
+            })) || [],
+          }))
+        );
+      } else {
+        setTandas([]);
       }
     }
   }, [eventData, isEdit]);
@@ -214,9 +248,9 @@ const EventForm = () => {
     validateField('city', formData.city);
     validateField('category', formData.category);
 
-    // Validar ticket types
+    // Validar tipos de entrada
     const validTicketTypes = ticketTypes.filter(
-      (tt) => tt.name && tt.price && tt.totalQty && parseFloat(tt.price) > 0 && parseInt(tt.totalQty) > 0
+      (tt) => tt.name && tt.totalQty && parseInt(tt.totalQty) > 0
     );
 
     if (validTicketTypes.length === 0) {
@@ -226,6 +260,47 @@ const EventForm = () => {
         variant: 'destructive',
       });
       return;
+    }
+
+    // Validar tandas
+    if (tandas.length === 0) {
+      toast({
+        title: 'Error de validación',
+        description: 'Debes agregar al menos una tanda',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    for (const tanda of tandas) {
+      if (!tanda.startDate || !tanda.endDate) {
+        toast({
+          title: 'Error de validación',
+          description: 'Todas las tandas deben tener fecha de inicio y fin',
+          variant: 'destructive',
+        });
+        return;
+      }
+
+      if (tanda.ticketTypes.length === 0) {
+        toast({
+          title: 'Error de validación',
+          description: 'Cada tanda debe tener al menos un tipo de entrada',
+          variant: 'destructive',
+        });
+        return;
+      }
+
+      for (const tt of tanda.ticketTypes) {
+        if (!tt.price || parseFloat(tt.price) <= 0 || !tt.quantity || parseInt(tt.quantity) <= 0) {
+          toast({
+            title: 'Error de validación',
+            description: 'Todos los tipos de entrada en las tandas deben tener precio y cantidad válidos',
+            variant: 'destructive',
+          });
+          return;
+        }
+      }
     }
 
     // Verificar si hay errores
@@ -238,13 +313,32 @@ const EventForm = () => {
       return;
     }
 
+    // Calcular totalQty para cada tipo de entrada sumando las cantidades de todas las tandas
+    const ticketTypesWithTotals = validTicketTypes.map((tt) => {
+      const totalQty = tandas.reduce((sum, tanda) => {
+        const tandaType = tanda.ticketTypes.find(t => t.name === tt.name);
+        return sum + (tandaType ? parseInt(tandaType.quantity || '0') : 0);
+      }, 0);
+      return {
+        ...(tt.id && { id: tt.id }),
+        name: tt.name,
+        totalQty: totalQty || parseInt(tt.totalQty),
+      };
+    });
+
     const eventData = {
       ...formData,
-      ticketTypes: validTicketTypes.map((tt) => ({
-        ...(tt.id && { id: tt.id }), // Incluir ID si existe (para actualización)
-        name: tt.name,
-        price: parseFloat(tt.price),
-        totalQty: parseInt(tt.totalQty),
+      ticketTypes: ticketTypesWithTotals,
+      tandas: tandas.map((tanda) => ({
+        ...(tanda.id && { id: tanda.id }),
+        name: tanda.name,
+        startDate: tanda.startDate,
+        endDate: tanda.endDate,
+        ticketTypes: tanda.ticketTypes.map((tt) => ({
+          name: tt.name,
+          price: parseFloat(tt.price),
+          quantity: parseInt(tt.quantity),
+        })),
       })),
     };
 
@@ -252,7 +346,7 @@ const EventForm = () => {
   };
 
   const addTicketType = () => {
-    setTicketTypes([...ticketTypes, { name: '', price: '', totalQty: '' }]);
+    setTicketTypes([...ticketTypes, { name: '', totalQty: '' }]);
   };
 
   const removeTicketType = (index: number) => {
@@ -265,6 +359,62 @@ const EventForm = () => {
     const updated = [...ticketTypes];
     updated[index] = { ...updated[index], [field]: value };
     setTicketTypes(updated);
+  };
+
+  const addTanda = () => {
+    const validTicketTypes = ticketTypes.filter(tt => tt.name && tt.name.trim());
+    if (validTicketTypes.length === 0) {
+      toast({
+        title: 'Error',
+        description: 'Primero debes definir al menos un tipo de entrada con nombre',
+        variant: 'destructive',
+      });
+      return;
+    }
+    const newTanda: Tanda = {
+      name: `Tanda ${tandas.length + 1}`,
+      startDate: '',
+      endDate: '',
+      ticketTypes: validTicketTypes.map(tt => ({
+        name: tt.name,
+        price: '',
+        quantity: '',
+      })),
+    };
+    setTandas([...tandas, newTanda]);
+  };
+
+  const removeTanda = (index: number) => {
+    setTandas(tandas.filter((_, i) => i !== index));
+  };
+
+  const updateTanda = (index: number, field: keyof Tanda, value: string) => {
+    const updated = [...tandas];
+    updated[index] = { ...updated[index], [field]: value };
+    setTandas(updated);
+  };
+
+  const updateTandaTicketType = (tandaIndex: number, ticketTypeName: string, field: keyof TandaTicketType, value: string) => {
+    const updated = [...tandas];
+    const tanda = updated[tandaIndex];
+    const existingIndex = tanda.ticketTypes.findIndex(t => t.name === ticketTypeName);
+    
+    if (existingIndex >= 0) {
+      // Actualizar existente
+      tanda.ticketTypes[existingIndex] = {
+        ...tanda.ticketTypes[existingIndex],
+        [field]: value,
+      };
+    } else {
+      // Crear nuevo
+      tanda.ticketTypes.push({
+        name: ticketTypeName,
+        price: field === 'price' ? value : '',
+        quantity: field === 'quantity' ? value : '',
+      });
+    }
+    
+    setTandas(updated);
   };
 
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -472,6 +622,73 @@ const EventForm = () => {
                     <p className="text-xs text-muted-foreground mt-1">
                       {formData.description.length} caracteres
                     </p>
+                  </div>
+
+                  {/* Visibilidad del evento */}
+                  <div>
+                    <Label className="text-base font-semibold mb-3 block">Visibilidad del Evento</Label>
+                    <div className="space-y-3">
+                      <label className="flex items-center space-x-3 p-4 border-2 rounded-lg cursor-pointer hover:bg-muted/50 transition-colors">
+                        <input
+                          type="radio"
+                          name="isPublic"
+                          value="true"
+                          checked={formData.isPublic === true}
+                          onChange={() => setFormData({ ...formData, isPublic: true })}
+                          className="w-4 h-4 text-secondary"
+                          disabled={mutation.isPending}
+                        />
+                        <div className="flex-1">
+                          <div className="font-medium">Evento Público</div>
+                          <div className="text-sm text-muted-foreground">
+                            El evento aparecerá en búsquedas y listados públicos
+                          </div>
+                        </div>
+                      </label>
+                      <label className="flex items-center space-x-3 p-4 border-2 rounded-lg cursor-pointer hover:bg-muted/50 transition-colors">
+                        <input
+                          type="radio"
+                          name="isPublic"
+                          value="false"
+                          checked={formData.isPublic === false}
+                          onChange={() => setFormData({ ...formData, isPublic: false })}
+                          className="w-4 h-4 text-secondary"
+                          disabled={mutation.isPending}
+                        />
+                        <div className="flex-1">
+                          <div className="font-medium">Evento Privado</div>
+                          <div className="text-sm text-muted-foreground">
+                            Solo accesible mediante link directo. No aparecerá en búsquedas públicas
+                          </div>
+                        </div>
+                      </label>
+                    </div>
+                    {eventData?.data && !eventData.data.isPublic && eventData.data.privateLink && (
+                      <div className="mt-3 p-3 bg-secondary/10 rounded-lg">
+                        <Label className="text-sm font-semibold mb-2 block">Link de acceso privado:</Label>
+                        <div className="flex items-center gap-2">
+                          <code className="flex-1 p-2 bg-background rounded border text-sm">
+                            {window.location.origin}/evento/{eventData.data.id}?link={eventData.data.privateLink}
+                          </code>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={() => {
+                              navigator.clipboard.writeText(
+                                `${window.location.origin}/evento/${eventData.data.id}?link=${eventData.data.privateLink}`
+                              );
+                              toast({
+                                title: 'Link copiado',
+                                description: 'El link de acceso privado ha sido copiado al portapapeles',
+                              });
+                            }}
+                          >
+                            Copiar
+                          </Button>
+                        </div>
+                      </div>
+                    )}
                   </div>
 
                   {/* Imagen mejorada */}
@@ -715,7 +932,7 @@ const EventForm = () => {
                       </div>
                       <div>
                         <CardTitle className="text-xl">Tipos de Entrada</CardTitle>
-                        <CardDescription>Define los tipos y precios de las entradas</CardDescription>
+                        <CardDescription>Define los tipos de entrada (General, VIP, etc.)</CardDescription>
                       </div>
                     </div>
                     <Button 
@@ -732,15 +949,20 @@ const EventForm = () => {
                 </CardHeader>
                 <CardContent className="space-y-4">
                   {ticketTypes.map((tt, index) => {
-                    const isValid = tt.name && tt.price && tt.totalQty && parseFloat(tt.price) > 0 && parseInt(tt.totalQty) > 0;
+                    const isValid = tt.name && tt.totalQty && parseInt(tt.totalQty) > 0;
+                    // Calcular cantidad total desde las tandas
+                    const calculatedTotal = tandas.reduce((sum, tanda) => {
+                      const tandaType = tanda.ticketTypes.find(t => t.name === tt.name);
+                      return sum + (tandaType ? parseInt(tandaType.quantity || '0') : 0);
+                    }, 0);
                     return (
                       <div 
                         key={index} 
-                        className={`p-5 border-2 rounded-lg transition-all ${
+                        className={`p-4 border-2 rounded-lg transition-all ${
                           isValid ? 'border-green-200 dark:border-green-800 bg-green-50/50 dark:bg-green-900/10' : 'border-border'
                         }`}
                       >
-                        <div className="flex items-center justify-between mb-4">
+                        <div className="flex items-center justify-between mb-3">
                           <div className="flex items-center gap-2">
                             <span className="text-sm font-semibold">Tipo {index + 1}</span>
                             {isValid && (
@@ -759,46 +981,184 @@ const EventForm = () => {
                             </Button>
                           )}
                         </div>
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                           <div>
                             <Label>Nombre *</Label>
                             <Input
                               value={tt.name}
                               onChange={(e) => updateTicketType(index, 'name', e.target.value)}
-                              placeholder="Ej: Campo General"
+                              placeholder="Ej: General, VIP, Mitangrid"
                               className="mt-1 h-10"
                               disabled={mutation.isPending}
                             />
                           </div>
                           <div>
-                            <Label>Precio (AR$) *</Label>
+                            <Label>Cantidad Total</Label>
                             <Input
                               type="number"
-                              value={tt.price}
-                              onChange={(e) => updateTicketType(index, 'price', e.target.value)}
-                              placeholder="0"
-                              min="0"
-                              step="0.01"
-                              className="mt-1 h-10"
-                              disabled={mutation.isPending}
-                            />
-                          </div>
-                          <div>
-                            <Label>Cantidad *</Label>
-                            <Input
-                              type="number"
-                              value={tt.totalQty}
+                              value={calculatedTotal > 0 ? String(calculatedTotal) : tt.totalQty}
                               onChange={(e) => updateTicketType(index, 'totalQty', e.target.value)}
                               placeholder="0"
                               min="1"
                               className="mt-1 h-10"
-                              disabled={mutation.isPending}
+                              disabled={mutation.isPending || calculatedTotal > 0}
+                              title={calculatedTotal > 0 ? "La cantidad se calcula automáticamente desde las tandas" : ""}
                             />
+                            {calculatedTotal > 0 && (
+                              <p className="text-xs text-muted-foreground mt-1">
+                                Calculado automáticamente desde las tandas: {calculatedTotal}
+                              </p>
+                            )}
                           </div>
                         </div>
                       </div>
                     );
                   })}
+                </CardContent>
+              </Card>
+
+              {/* Tandas */}
+              <Card className="border-2 shadow-lg">
+                <CardHeader className="pb-4">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <div className="p-2 rounded-lg bg-blue-100 dark:bg-blue-900/30">
+                        <Calendar className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+                      </div>
+                      <div>
+                        <CardTitle className="text-xl">Tandas</CardTitle>
+                        <CardDescription>Define las tandas con fechas y precios por tipo de entrada</CardDescription>
+                      </div>
+                    </div>
+                    <Button 
+                      type="button" 
+                      variant="outline" 
+                      size="sm" 
+                      onClick={addTanda}
+                      className="h-9"
+                      disabled={ticketTypes.length === 0 || ticketTypes.some(tt => !tt.name)}
+                    >
+                      <Plus className="w-4 h-4 mr-2" />
+                      Agregar Tanda
+                    </Button>
+                  </div>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  {tandas.length === 0 ? (
+                    <p className="text-sm text-muted-foreground text-center py-8">
+                      Agregá tandas para definir períodos de venta con diferentes precios por tipo de entrada
+                    </p>
+                  ) : (
+                    tandas.map((tanda, tandaIndex) => (
+                      <div key={tandaIndex} className="p-5 border-2 rounded-lg bg-muted/30">
+                        <div className="flex items-center justify-between mb-4">
+                          <div className="flex items-center gap-2">
+                            <span className="text-sm font-semibold">{tanda.name}</span>
+                            {tanda.startDate && tanda.endDate && tanda.ticketTypes.length > 0 && (
+                              <CheckCircle2 className="w-4 h-4 text-green-500" />
+                            )}
+                          </div>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => removeTanda(tandaIndex)}
+                            className="h-8 w-8 p-0 text-destructive hover:text-destructive hover:bg-destructive/10"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        </div>
+                        
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                          <div>
+                            <Label>Nombre</Label>
+                            <Input
+                              value={tanda.name}
+                              onChange={(e) => updateTanda(tandaIndex, 'name', e.target.value)}
+                              placeholder="Tanda 1"
+                              className="mt-1 h-10"
+                              disabled={mutation.isPending}
+                            />
+                          </div>
+                          <div>
+                            <Label>Fecha Inicio *</Label>
+                            <Input
+                              type="date"
+                              value={tanda.startDate}
+                              onChange={(e) => updateTanda(tandaIndex, 'startDate', e.target.value)}
+                              className="mt-1 h-10"
+                              disabled={mutation.isPending}
+                              required
+                            />
+                          </div>
+                          <div>
+                            <Label>Fecha Fin *</Label>
+                            <Input
+                              type="date"
+                              value={tanda.endDate}
+                              onChange={(e) => updateTanda(tandaIndex, 'endDate', e.target.value)}
+                              className="mt-1 h-10"
+                              disabled={mutation.isPending}
+                              required
+                            />
+                          </div>
+                        </div>
+
+                        <div className="pt-4 border-t">
+                          <Label className="text-sm font-semibold mb-3 block">Precios y Cantidades por Tipo de Entrada</Label>
+                          <div className="space-y-3">
+                            {ticketTypes.filter(tt => tt.name && tt.name.trim()).map((tt, ttIndex) => {
+                              const tandaType = tanda.ticketTypes.find(t => t.name === tt.name) || {
+                                name: tt.name,
+                                price: '',
+                                quantity: '',
+                              };
+                              
+                              return (
+                                <div key={ttIndex} className="p-3 bg-background rounded-lg border">
+                                  <div className="flex items-center gap-2 mb-2">
+                                    <span className="text-sm font-medium">{tt.name}</span>
+                                  </div>
+                                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                    <div>
+                                      <Label className="text-xs">Precio (AR$) *</Label>
+                                      <Input
+                                        type="number"
+                                        value={tandaType.price}
+                                        onChange={(e) => updateTandaTicketType(tandaIndex, tt.name, 'price', e.target.value)}
+                                        placeholder="0"
+                                        min="0"
+                                        step="0.01"
+                                        className="h-9"
+                                        disabled={mutation.isPending}
+                                      />
+                                    </div>
+                                    <div>
+                                      <Label className="text-xs">Cantidad *</Label>
+                                      <Input
+                                        type="number"
+                                        value={tandaType.quantity}
+                                        onChange={(e) => updateTandaTicketType(tandaIndex, tt.name, 'quantity', e.target.value)}
+                                        placeholder="0"
+                                        min="1"
+                                        className="h-9"
+                                        disabled={mutation.isPending}
+                                      />
+                                    </div>
+                                  </div>
+                                </div>
+                              );
+                            })}
+                            {ticketTypes.filter(tt => tt.name && tt.name.trim()).length === 0 && (
+                              <p className="text-sm text-muted-foreground text-center py-4">
+                                Primero debes definir tipos de entrada con nombre
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    ))
+                  )}
                 </CardContent>
               </Card>
 

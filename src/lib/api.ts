@@ -115,6 +115,9 @@ export const authApi = {
   
   verifyEmail: (token: string) =>
     api.post<{ success: boolean }>('/auth/verify-email', { token }),
+  
+  getMe: () =>
+    api.get<{ success: boolean; data: any }>('/auth/me'),
 };
 
 export const ordersApi = {
@@ -139,8 +142,12 @@ export const eventsApi = {
     return api.get<{ success: boolean; data: any }>(`/events?${query.toString()}`);
   },
   
-  getById: (id: string) =>
-    api.get<{ success: boolean; data: any }>(`/events/${id}`),
+  getById: (id: string, privateLink?: string) => {
+    const url = privateLink 
+      ? `/events/${id}?link=${encodeURIComponent(privateLink)}`
+      : `/events/${id}`;
+    return api.get<{ success: boolean; data: any }>(url);
+  },
   
   create: (data: any) =>
     api.post<{ success: boolean; data: any }>('/events', data),
@@ -181,8 +188,15 @@ export const adminApi = {
   getEventStats: (eventId: string) =>
     api.get<{ success: boolean; data: any }>(`/admin/stats/events/${eventId}`),
   
-  getUsers: () =>
-    api.get<{ success: boolean; data: any }>('/admin/users'),
+  getUsers: (params?: { role?: string; assignedBy?: string }) => {
+    const query = new URLSearchParams();
+    if (params) {
+      Object.entries(params).forEach(([key, value]) => {
+        if (value !== undefined) query.append(key, String(value));
+      });
+    }
+    return api.get<{ success: boolean; data: any }>(`/admin/users?${query.toString()}`);
+  },
   
   getUserById: (userId: string) =>
     api.get<{ success: boolean; data: any }>(`/admin/users/${userId}`),
@@ -192,6 +206,25 @@ export const adminApi = {
   
   blockUser: (userId: string) =>
     api.post<{ success: boolean }>(`/admin/users/${userId}/block`),
+  
+  createVendedor: (data: { email: string; password: string; name: string; dni: string; phone?: string; commissionPercent: number }) =>
+    api.post<{ success: boolean; data: any }>('/admin/users/vendedor', data),
+  
+  createPortero: (data: { email: string; password: string; name: string; dni: string; phone?: string }) =>
+    api.post<{ success: boolean; data: any }>('/admin/users/portero', data),
+  
+  getAllVendedores: (assignedBy?: string) => {
+    const query = assignedBy ? `?assignedBy=${assignedBy}` : '';
+    return api.get<{ success: boolean; data: any }>(`/admin/vendedores${query}`);
+  },
+  
+  getAllPorteros: (assignedBy?: string) => {
+    const query = assignedBy ? `?assignedBy=${assignedBy}` : '';
+    return api.get<{ success: boolean; data: any }>(`/admin/porteros${query}`);
+  },
+  
+  assignEventToVendedor: (data: { vendedorId: string; eventId: string; ticketLimit?: number }) =>
+    api.post<{ success: boolean; data: any }>('/vendedores/assign-event', data),
 };
 
 export const ticketsApi = {
@@ -302,6 +335,40 @@ export const uploadApi = {
       }
       return res.json();
     });
+  },
+};
+
+export const favoriteApi = {
+  add: (eventId: string) => api.post<{ success: boolean }>(`/favorites/${eventId}`),
+  remove: (eventId: string) => api.delete<{ success: boolean }>(`/favorites/${eventId}`),
+  getFavorites: () => api.get<{ success: boolean; data: any[] }>('/favorites'),
+  checkFavorite: (eventId: string) => api.get<{ success: boolean; data: { isFavorite: boolean } }>(`/favorites/${eventId}/check`),
+};
+
+export const paymentApi = {
+  createMercadoPagoPreference: (data: { orderId: string; payerEmail: string; payerName: string; payerDni: string; tickets?: Array<{ ticketTypeId: string; quantity: number }> }) =>
+    api.post<{ success: boolean; data: { id: string; init_point: string; sandbox_init_point: string; client_id: string } }>('/payments/mercadopago/create-preference', data),
+};
+
+export const vendedorApi = {
+  getDashboard: () =>
+    api.get<{ success: boolean; data: any }>('/vendedores/dashboard'),
+  getMetrics: () =>
+    api.get<{ success: boolean; data: any }>('/vendedores/metrics'),
+  createReferido: (data: { eventId: string; customCode?: string }) =>
+    api.post<{ success: boolean; data: any }>('/vendedores/referidos', data),
+  updateReferidoCode: (referidoId: string, customCode: string) =>
+    api.put<{ success: boolean; data: any }>('/vendedores/referidos/code', { referidoId, customCode }),
+  updateAllReferidoCodes: (customCode: string) =>
+    api.put<{ success: boolean; data: any }>('/vendedores/referidos/all-codes', { customCode }),
+};
+
+export const porteroApi = {
+  scanTicket: (qrCode: string) =>
+    api.post<{ success: boolean; data: { isValid: boolean; reason?: string; ticket?: any } }>('/porteros/scan', { qrCode }),
+  getScanHistory: (limit?: number) => {
+    const query = limit ? `?limit=${limit}` : '';
+    return api.get<{ success: boolean; data: any[] }>(`/porteros/history${query}`);
   },
 };
 

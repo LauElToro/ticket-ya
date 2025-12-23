@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
@@ -13,12 +13,43 @@ import { Loader2 } from 'lucide-react';
 const Login = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { login } = useAuth();
+  const { login, isAuthenticated, isLoading: authLoading } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
+
+  // Si ya está autenticado, redirigir según el rol
+  useEffect(() => {
+    if (!authLoading && isAuthenticated) {
+      const user = JSON.parse(localStorage.getItem('user') || '{}');
+      let redirectPath = '/';
+      if (user.role === 'VENDEDOR') {
+        redirectPath = '/vendedor/dashboard';
+      } else if (user.role === 'PORTERO') {
+        redirectPath = '/portero/scan';
+      } else if (user.role === 'ADMIN' || user.role === 'ORGANIZER') {
+        redirectPath = '/admin/dashboard';
+      } else {
+        redirectPath = (location.state as any)?.from || '/';
+      }
+      navigate(redirectPath, { replace: true });
+    }
+  }, [isAuthenticated, authLoading, navigate, location]);
+
   const [formData, setFormData] = useState({
     email: '',
     password: '',
   });
+
+  // Mostrar loading mientras se valida la sesión
+  if (authLoading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center">
+          <Loader2 className="w-8 h-8 animate-spin mx-auto mb-4 text-primary" />
+          <p className="text-muted-foreground">Verificando sesión...</p>
+        </div>
+      </div>
+    );
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -28,9 +59,24 @@ const Login = () => {
       await login(formData.email, formData.password);
       toast({ title: 'Sesión iniciada exitosamente' });
       
-      // Redirigir a la página de origen si existe, o al inicio
-      const from = (location.state as any)?.from || '/';
-      navigate(from);
+      // Obtener el usuario del contexto después del login
+      const user = JSON.parse(localStorage.getItem('user') || '{}');
+      
+      // Redirigir según el rol
+      let redirectPath = '/';
+      if (user.role === 'VENDEDOR') {
+        redirectPath = '/vendedor/dashboard';
+      } else if (user.role === 'PORTERO') {
+        redirectPath = '/portero/scan';
+      } else if (user.role === 'ADMIN' || user.role === 'ORGANIZER') {
+        redirectPath = '/admin/dashboard';
+      } else {
+        // Redirigir a la página de origen si existe, o al inicio
+        const from = (location.state as any)?.from || '/';
+        redirectPath = from;
+      }
+      
+      navigate(redirectPath);
     } catch (error: any) {
       toast({
         title: 'Error al iniciar sesión',
