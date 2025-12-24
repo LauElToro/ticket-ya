@@ -34,87 +34,23 @@ const Dashboard = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20">
       <Header />
-      <main className="pt-24 pb-16">
-        <div className="container mx-auto px-4 max-w-7xl">
+      <main className="pt-16 sm:pt-24 pb-16">
+        <div className="container mx-auto px-4 sm:px-6 max-w-7xl">
           {/* Header mejorado */}
-          <div className="mb-10">
-            <div className="flex items-center gap-3 mb-3">
-              <div className="w-1 h-12 bg-gradient-to-b from-secondary to-primary rounded-full"></div>
-              <div>
-                <h1 className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text text-transparent">
+          <div className="mb-6 sm:mb-10">
+            <div className="flex items-center gap-2 sm:gap-3 mb-3">
+              <div className="w-1 h-8 sm:h-12 bg-gradient-to-b from-secondary to-primary rounded-full flex-shrink-0"></div>
+              <div className="min-w-0 flex-1">
+                <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text text-transparent break-words">
                   Dashboard
                 </h1>
-                <p className="text-muted-foreground mt-1 text-lg">Vista general y gestión rápida</p>
+                <p className="text-muted-foreground mt-1 text-sm sm:text-base md:text-lg break-words">Vista general y gestión rápida</p>
               </div>
             </div>
           </div>
 
-          {/* Acciones rápidas - ARRIBA DE TODO - Mejorado */}
-          <Card className="mb-8 border-2 shadow-xl bg-gradient-to-br from-card to-card/50 backdrop-blur-sm">
-            <CardHeader className="pb-4">
-              <CardTitle className="text-2xl flex items-center gap-3">
-                <div className="p-2 rounded-lg bg-gradient-to-br from-secondary/20 to-secondary/10">
-                  <span className="text-2xl">⚡</span>
-                </div>
-                Acciones Rápidas
-              </CardTitle>
-              <CardDescription className="text-base">Accesos directos a las funciones más utilizadas</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                <Button 
-                  onClick={() => navigate('/admin/events/new')}
-                  className="h-auto py-8 flex flex-col items-center gap-3 bg-gradient-to-br from-secondary to-secondary/90 hover:from-secondary/90 hover:to-secondary shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105"
-                  size="lg"
-                >
-                  <div className="p-3 rounded-full bg-white/20 backdrop-blur-sm">
-                    <Calendar className="w-7 h-7" />
-                  </div>
-                  <span className="font-bold text-lg">Crear Evento</span>
-                  <span className="text-xs opacity-90">Nuevo evento</span>
-                </Button>
-                <Button 
-                  variant="outline" 
-                  onClick={() => navigate('/admin/events')}
-                  className="h-auto py-8 flex flex-col items-center gap-3 border-2 hover:border-secondary hover:bg-secondary/5 transition-all duration-300 transform hover:scale-105 shadow-md hover:shadow-lg"
-                  size="lg"
-                >
-                  <div className="p-3 rounded-full bg-secondary/10">
-                    <Ticket className="w-7 h-7 text-secondary" />
-                  </div>
-                  <span className="font-bold text-lg">Ver Eventos</span>
-                  <span className="text-xs opacity-70">Gestionar eventos</span>
-                </Button>
-                <Button 
-                  variant="outline" 
-                  onClick={() => navigate('/admin/metrics')}
-                  className="h-auto py-8 flex flex-col items-center gap-3 border-2 hover:border-secondary hover:bg-secondary/5 transition-all duration-300 transform hover:scale-105 shadow-md hover:shadow-lg"
-                  size="lg"
-                >
-                  <div className="p-3 rounded-full bg-secondary/10">
-                    <DollarSign className="w-7 h-7 text-secondary" />
-                  </div>
-                  <span className="font-bold text-lg">Ver Métricas</span>
-                  <span className="text-xs opacity-70">Análisis detallado</span>
-                </Button>
-                <Button 
-                  variant="outline" 
-                  onClick={() => navigate('/admin/users')}
-                  className="h-auto py-8 flex flex-col items-center gap-3 border-2 hover:border-secondary hover:bg-secondary/5 transition-all duration-300 transform hover:scale-105 shadow-md hover:shadow-lg"
-                  size="lg"
-                >
-                  <div className="p-3 rounded-full bg-secondary/10">
-                    <Users className="w-7 h-7 text-secondary" />
-                  </div>
-                  <span className="font-bold text-lg">Usuarios</span>
-                  <span className="text-xs opacity-70">Gestionar usuarios</span>
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Estadísticas principales - Mejoradas */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+          {/* Estadísticas principales - ARRIBA DE TODO */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-6 sm:mb-8">
             <Card className="border-2 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 bg-gradient-to-br from-card to-card/80 backdrop-blur-sm group">
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
                 <CardTitle className="text-sm font-semibold text-muted-foreground">Total Eventos</CardTitle>
@@ -177,6 +113,70 @@ const Dashboard = () => {
               </CardContent>
             </Card>
           </div>
+
+          {/* Acciones rápidas - Mejorado */}
+          <Card className="mb-6 sm:mb-8 border-2 shadow-xl bg-gradient-to-br from-card to-card/50 backdrop-blur-sm">
+            <CardHeader className="pb-3 sm:pb-4">
+              <CardTitle className="text-xl sm:text-2xl flex items-center gap-2 sm:gap-3">
+                <div className="p-1.5 sm:p-2 rounded-lg bg-gradient-to-br from-secondary/20 to-secondary/10 flex-shrink-0">
+                  <span className="text-xl sm:text-2xl">⚡</span>
+                </div>
+                <span className="break-words">Acciones Rápidas</span>
+              </CardTitle>
+              <CardDescription className="text-sm sm:text-base">Accesos directos a las funciones más utilizadas</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
+                <Button 
+                  onClick={() => navigate('/admin/events/new')}
+                  className="h-auto py-6 sm:py-8 flex flex-col items-center gap-2 sm:gap-3 bg-gradient-to-br from-secondary to-secondary/90 hover:from-secondary/90 hover:to-secondary shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105"
+                  size="lg"
+                >
+                  <div className="p-2 sm:p-3 rounded-full bg-white/20 backdrop-blur-sm">
+                    <Calendar className="w-5 h-5 sm:w-6 sm:h-6 md:w-7 md:h-7" />
+                  </div>
+                  <span className="font-bold text-base sm:text-lg break-words text-center">Crear Evento</span>
+                  <span className="text-xs opacity-90 hidden sm:inline">Nuevo evento</span>
+                </Button>
+                <Button 
+                  variant="outline" 
+                  onClick={() => navigate('/admin/events')}
+                  className="h-auto py-6 sm:py-8 flex flex-col items-center gap-2 sm:gap-3 border-2 hover:border-secondary hover:bg-secondary/5 transition-all duration-300 transform hover:scale-105 shadow-md hover:shadow-lg"
+                  size="lg"
+                >
+                  <div className="p-2 sm:p-3 rounded-full bg-secondary/10">
+                    <Ticket className="w-5 h-5 sm:w-6 sm:h-6 md:w-7 md:h-7 text-secondary" />
+                  </div>
+                  <span className="font-bold text-base sm:text-lg break-words text-center">Ver Eventos</span>
+                  <span className="text-xs opacity-70 hidden sm:inline">Gestionar eventos</span>
+                </Button>
+                <Button 
+                  variant="outline" 
+                  onClick={() => navigate('/admin/metrics')}
+                  className="h-auto py-6 sm:py-8 flex flex-col items-center gap-2 sm:gap-3 border-2 hover:border-secondary hover:bg-secondary/5 transition-all duration-300 transform hover:scale-105 shadow-md hover:shadow-lg"
+                  size="lg"
+                >
+                  <div className="p-2 sm:p-3 rounded-full bg-secondary/10">
+                    <DollarSign className="w-5 h-5 sm:w-6 sm:h-6 md:w-7 md:h-7 text-secondary" />
+                  </div>
+                  <span className="font-bold text-base sm:text-lg break-words text-center">Ver Métricas</span>
+                  <span className="text-xs opacity-70 hidden sm:inline">Análisis detallado</span>
+                </Button>
+                <Button 
+                  variant="outline" 
+                  onClick={() => navigate('/admin/users')}
+                  className="h-auto py-6 sm:py-8 flex flex-col items-center gap-2 sm:gap-3 border-2 hover:border-secondary hover:bg-secondary/5 transition-all duration-300 transform hover:scale-105 shadow-md hover:shadow-lg"
+                  size="lg"
+                >
+                  <div className="p-2 sm:p-3 rounded-full bg-secondary/10">
+                    <Users className="w-5 h-5 sm:w-6 sm:h-6 md:w-7 md:h-7 text-secondary" />
+                  </div>
+                  <span className="font-bold text-base sm:text-lg break-words text-center">Usuarios</span>
+                  <span className="text-xs opacity-70 hidden sm:inline">Gestionar usuarios</span>
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
             {/* Eventos próximos - Mejorado */}

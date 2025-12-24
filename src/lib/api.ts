@@ -163,14 +163,14 @@ export const adminApi = {
   getDashboard: () =>
     api.get<{ success: boolean; data: any }>('/admin/dashboard'),
   
-  getEvents: (params?: { search?: string; isActive?: string }) => {
+  getEvents: (params?: { search?: string; isActive?: string; page?: number; limit?: number }) => {
     const query = new URLSearchParams();
     if (params) {
       Object.entries(params).forEach(([key, value]) => {
         if (value !== undefined) query.append(key, String(value));
       });
     }
-    return api.get<{ success: boolean; data: any }>(`/admin/events?${query.toString()}`);
+    return api.get<{ success: boolean; data: { events: any[]; pagination: any } }>(`/admin/events?${query.toString()}`);
   },
   
   getEventById: (id: string) =>
@@ -188,14 +188,47 @@ export const adminApi = {
   getEventStats: (eventId: string) =>
     api.get<{ success: boolean; data: any }>(`/admin/stats/events/${eventId}`),
   
-  getUsers: (params?: { role?: string; assignedBy?: string }) => {
+  getUsers: (params?: { role?: string; assignedBy?: string; page?: number; limit?: number }) => {
     const query = new URLSearchParams();
     if (params) {
       Object.entries(params).forEach(([key, value]) => {
         if (value !== undefined) query.append(key, String(value));
       });
     }
-    return api.get<{ success: boolean; data: any }>(`/admin/users?${query.toString()}`);
+    return api.get<{ success: boolean; data: { users: any[]; pagination: any } }>(`/admin/users?${query.toString()}`);
+  },
+  
+  deleteUser: (userId: string) =>
+    api.delete<{ success: boolean; message: string }>(`/admin/users/${userId}`),
+  
+  exportUsersToExcel: async () => {
+    const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+    const response = await fetch(`${API_URL}/admin/users/export`, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+      },
+    });
+    
+    if (!response.ok) {
+      let error;
+      try {
+        error = await response.json();
+      } catch {
+        error = { message: `Error ${response.status}: ${response.statusText}` };
+      }
+      throw new Error(error.message || error.error?.message || 'Error al exportar usuarios');
+    }
+    
+    const blob = await response.blob();
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `usuarios-${new Date().toISOString().split('T')[0]}.xlsx`;
+    document.body.appendChild(a);
+    a.click();
+    window.URL.revokeObjectURL(url);
+    document.body.removeChild(a);
   },
   
   getUserById: (userId: string) =>

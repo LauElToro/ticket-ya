@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import Header from '@/components/layout/Header';
@@ -11,7 +11,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Search, Shield, User as UserIcon, Mail, Calendar, Plus, Eye, Edit, UserPlus, Loader2, DollarSign, Ticket, Users, Link as LinkIcon } from 'lucide-react';
+import { Search, Shield, User as UserIcon, Mail, Calendar, Plus, Eye, Edit, UserPlus, Loader2, DollarSign, Ticket, Users, Link as LinkIcon, Trash2, ChevronLeft, ChevronRight, Download } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { toast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
@@ -30,6 +30,8 @@ const UsersList = () => {
   const [editRoleData, setEditRoleData] = useState({ userId: '', role: '' });
   const [showAssignEvent, setShowAssignEvent] = useState(false);
   const [assignEventData, setAssignEventData] = useState({ vendedorId: '', eventId: '', ticketLimit: '' });
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize] = useState(10);
 
   const [createFormData, setCreateFormData] = useState({
     email: '',
@@ -40,10 +42,21 @@ const UsersList = () => {
     commissionPercent: '10',
   });
 
-  const { data, isLoading } = useQuery({
-    queryKey: ['admin-users', roleFilter],
-    queryFn: () => adminApi.getUsers({ role: roleFilter !== 'all' ? roleFilter : undefined }),
+  const { data, isLoading, refetch } = useQuery({
+    queryKey: ['admin-users', roleFilter, currentPage, search],
+    queryFn: () => adminApi.getUsers({ 
+      role: roleFilter !== 'all' ? roleFilter : undefined,
+      assignedBy: currentUser?.role === 'ORGANIZER' ? currentUser.id : undefined,
+      search: search || undefined,
+      page: currentPage,
+      limit: pageSize,
+    }),
   });
+
+  // Resetear página cuando cambia el filtro
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [roleFilter, search]);
 
   const { data: userDetails } = useQuery({
     queryKey: ['admin-user-details', selectedUser?.id],
@@ -51,20 +64,37 @@ const UsersList = () => {
     enabled: !!selectedUser && showUserDetails,
   });
 
-  const users = data?.data || [];
+  const users = data?.data?.users || [];
+  const pagination = data?.data?.pagination || { page: 1, limit: 20, total: 0, totalPages: 1 };
 
-  const filteredUsers = users.filter((user: any) => {
-    if (search) {
-      const searchLower = search.toLowerCase();
-      const matchesSearch = (
-        user.name?.toLowerCase().includes(searchLower) ||
-        user.email?.toLowerCase().includes(searchLower) ||
-        user.dni?.includes(search)
-      );
-      if (!matchesSearch) return false;
-    }
-    return true;
+  // La búsqueda ahora se hace en el backend, no necesitamos filtrar aquí
+  const filteredUsers = users;
+
+  const deleteUserMutation = useMutation({
+    mutationFn: (userId: string) => adminApi.deleteUser(userId),
+    onSuccess: () => {
+      toast({
+        title: 'Usuario eliminado',
+        description: 'El usuario ha sido eliminado exitosamente.',
+      });
+      queryClient.invalidateQueries({ queryKey: ['admin-users'] });
+      if (currentPage > 1 && filteredUsers.length === 1) {
+        setCurrentPage(currentPage - 1);
+      }
+    },
+    onError: (error: any) => {
+      toast({
+        title: 'Error',
+        description: error.message || 'No se pudo eliminar el usuario.',
+        variant: 'destructive',
+      });
+    },
   });
+
+  const handleDeleteUser = (userId: string, userName: string) => {
+    if (!confirm(`¿Estás seguro de eliminar al usuario "${userName}"? Esta acción no se puede deshacer.`)) return;
+    deleteUserMutation.mutate(userId);
+  };
 
   const getRoleBadgeVariant = (role: string) => {
     switch (role) {
@@ -266,9 +296,11 @@ const UsersList = () => {
   // Obtener eventos para asignar
   const { data: eventsData } = useQuery({
     queryKey: ['admin-events-for-assign'],
-    queryFn: () => adminApi.getEvents({ isActive: 'true' }),
+    queryFn: () => adminApi.getEvents({ isActive: 'true', page: 1, limit: 100 }),
     enabled: showAssignEvent,
   });
+  
+  const eventsForAssign = eventsData?.data?.events || [];
 
   return (
     <div className="min-h-screen bg-background">
@@ -280,10 +312,97 @@ const UsersList = () => {
               <h1 className="text-3xl md:text-4xl font-bold mb-2">Gestión de Usuarios</h1>
               <p className="text-muted-foreground">Gestiona usuarios, roles y crea cuentas para vendedores/porteros</p>
             </div>
-            <Button onClick={() => setShowCreateDialog(true)}>
-              <Plus className="w-4 h-4 mr-2" />
-              Crear Usuario
-            </Button>
+            <div className="flex gap-2">
+              {currentUser?.role === 'ADMIN' && (
+                <Button 
+                  variant="outline" 
+                  onClick={async () => {
+                    try {
+                      await adminApi.exportUsersToExcel();
+                      toast({
+                        title: '✅ Exportación exitosa',
+                        description: 'El archivo Excel se está descargando.',
+                      });
+                    } catch (error: any) {
+                      toast({
+                        title: 'Error',
+                        description: error.message || 'No se pudo exportar los usuarios.',
+                        variant: 'destructive',
+                      });
+                    }
+                  }}
+                >
+                  <Download className="w-4 h-4 mr-2" />
+                  Exportar a Excel
+                </Button>
+              )}
+              <Button onClick={() => setShowCreateDialog(true)}>
+                <Plus className="w-4 h-4 mr-2" />
+                Crear Usuario
+              </Button>
+            </div>
+          </div>
+
+          {/* Estadísticas - AL PRINCIPIO */}
+          <div className="mb-8 grid grid-cols-1 md:grid-cols-4 lg:grid-cols-6 gap-4">
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-medium">Total Usuarios</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{pagination.total}</div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-medium">Administradores</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">
+                  {users.filter((u: any) => u.role === 'ADMIN').length}
+                </div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-medium">Organizadores</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">
+                  {users.filter((u: any) => u.role === 'ORGANIZER').length}
+                </div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-medium">Usuarios</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">
+                  {users.filter((u: any) => u.role === 'USER').length}
+                </div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-medium">Vendedores</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">
+                  {users.filter((u: any) => u.role === 'VENDEDOR').length}
+                </div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-medium">Porteros</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">
+                  {users.filter((u: any) => u.role === 'PORTERO').length}
+                </div>
+              </CardContent>
+            </Card>
           </div>
 
           {/* Filtros y búsqueda */}
@@ -404,6 +523,19 @@ const UsersList = () => {
                             Editar Rol
                           </Button>
                         )}
+                        {/* Botón eliminar - solo para usuarios creados por el admin/organizador actual */}
+                        {(user.vendedorProfile?.assignedByUser?.id === currentUser?.id || 
+                          user.porteroProfile?.assignedByUser?.id === currentUser?.id) && 
+                          user.role !== 'ADMIN' && user.role !== 'ORGANIZER' && (
+                          <Button 
+                            variant="outline" 
+                            size="sm" 
+                            onClick={() => handleDeleteUser(user.id, user.name)}
+                            className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        )}
                       </div>
                     </div>
                   </CardContent>
@@ -412,67 +544,60 @@ const UsersList = () => {
             </div>
           )}
 
-          {/* Estadísticas */}
-          <div className="mt-8 grid grid-cols-1 md:grid-cols-4 gap-4">
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium">Total Usuarios</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{users.length}</div>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium">Administradores</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">
-                  {users.filter((u: any) => u.role === 'ADMIN').length}
+          {/* Paginación */}
+          {pagination.totalPages > 1 && (
+            <div className="mt-6 flex items-center justify-between">
+              <div className="text-sm text-muted-foreground">
+                Mostrando {(currentPage - 1) * pageSize + 1} a {Math.min(currentPage * pageSize, pagination.total)} de {pagination.total} usuarios
+              </div>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                  disabled={currentPage === 1}
+                >
+                  <ChevronLeft className="w-4 h-4" />
+                  Anterior
+                </Button>
+                <div className="flex items-center gap-1">
+                  {Array.from({ length: Math.min(5, pagination.totalPages) }, (_, i) => {
+                    let pageNum;
+                    if (pagination.totalPages <= 5) {
+                      pageNum = i + 1;
+                    } else if (currentPage <= 3) {
+                      pageNum = i + 1;
+                    } else if (currentPage >= pagination.totalPages - 2) {
+                      pageNum = pagination.totalPages - 4 + i;
+                    } else {
+                      pageNum = currentPage - 2 + i;
+                    }
+                    return (
+                      <Button
+                        key={pageNum}
+                        variant={currentPage === pageNum ? "default" : "outline"}
+                        size="sm"
+                        onClick={() => setCurrentPage(pageNum)}
+                        className="w-10"
+                      >
+                        {pageNum}
+                      </Button>
+                    );
+                  })}
                 </div>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium">Organizadores</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">
-                  {users.filter((u: any) => u.role === 'ORGANIZER').length}
-                </div>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium">Usuarios</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">
-                  {users.filter((u: any) => u.role === 'USER').length}
-                </div>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium">Vendedores</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">
-                  {users.filter((u: any) => u.role === 'VENDEDOR').length}
-                </div>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium">Porteros</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">
-                  {users.filter((u: any) => u.role === 'PORTERO').length}
-                </div>
-              </CardContent>
-            </Card>
-          </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCurrentPage(p => Math.min(pagination.totalPages, p + 1))}
+                  disabled={currentPage === pagination.totalPages}
+                >
+                  Siguiente
+                  <ChevronRight className="w-4 h-4" />
+                </Button>
+              </div>
+            </div>
+          )}
+
         </div>
       </main>
 
@@ -847,7 +972,7 @@ const UsersList = () => {
                   <SelectValue placeholder="Seleccionar evento" />
                 </SelectTrigger>
                 <SelectContent>
-                  {eventsData?.data?.events?.map((event: any) => (
+                  {eventsForAssign.map((event: any) => (
                     <SelectItem key={event.id} value={event.id}>
                       {event.title} - {new Date(event.date).toLocaleDateString('es-AR')}
                     </SelectItem>

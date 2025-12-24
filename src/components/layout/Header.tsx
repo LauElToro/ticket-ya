@@ -32,9 +32,10 @@ const Header = () => {
     <header
       className={cn(
         'fixed top-0 left-0 right-0 z-50 transition-all duration-300',
+        // En mobile siempre tiene fondo sólido, en desktop puede ser transparente
         isScrolled
           ? 'bg-black/95 backdrop-blur-md shadow-soft'
-          : 'bg-transparent'
+          : 'bg-black/95 md:bg-transparent backdrop-blur-md md:backdrop-blur-none'
       )}
     >
       <div className="container mx-auto px-4">
@@ -110,7 +111,7 @@ const Header = () => {
           <button
             className={cn(
               "md:hidden p-2 transition-colors",
-              isScrolled ? "text-white" : "text-foreground"
+              "text-white" // En mobile siempre blanco porque el fondo es oscuro
             )}
             onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
           >
@@ -120,7 +121,7 @@ const Header = () => {
 
         {/* Mobile Menu */}
         {isMobileMenuOpen && (
-          <div className="md:hidden py-4 border-t border-border animate-fade-up">
+          <div className="md:hidden py-4 border-t border-white/20 animate-fade-up">
             <nav className="flex flex-col gap-2">
               {navLinks.map((link) => (
                 <Link
@@ -129,8 +130,8 @@ const Header = () => {
                   className={cn(
                     'px-4 py-3 rounded-lg text-sm font-medium transition-colors',
                     location.pathname === link.href
-                      ? 'bg-secondary/10 text-secondary'
-                      : 'text-muted-foreground hover:bg-muted'
+                      ? 'bg-secondary/20 text-secondary'
+                      : 'text-white/80 hover:bg-white/10 hover:text-white'
                   )}
                   onClick={() => setIsMobileMenuOpen(false)}
                 >
@@ -153,9 +154,9 @@ const Header = () => {
                       Dashboard
                     </Button>
                   )}
-                  <div className="px-4 py-2 rounded-lg bg-muted flex items-center gap-2">
-                    <User className="w-4 h-4" />
-                    <span className="text-sm">{user?.name}</span>
+                  <div className="px-4 py-2 rounded-lg bg-white/10 flex items-center gap-2">
+                    <User className="w-4 h-4 text-white" />
+                    <span className="text-sm text-white">{user?.name}</span>
                   </div>
                   <Button
                     variant="outline"

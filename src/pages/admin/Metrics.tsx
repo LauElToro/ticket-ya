@@ -98,44 +98,47 @@ const Metrics = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20">
       <Header />
-      <main className="pt-24 pb-16">
-        <div className="container mx-auto px-4 max-w-7xl">
+      <main className="pt-16 sm:pt-24 pb-16">
+        <div className="container mx-auto px-4 sm:px-6 max-w-7xl">
           {/* Header mejorado */}
-          <div className="mb-10">
+          <div className="mb-6 sm:mb-10">
             <Button 
               variant="ghost" 
               onClick={() => navigate('/admin/dashboard')}
-              className="mb-6 hover:bg-secondary/10 transition-colors"
+              className="mb-4 sm:mb-6 hover:bg-secondary/10 transition-colors text-sm sm:text-base"
             >
               <ArrowLeft className="w-4 h-4 mr-2" />
-              Volver al Dashboard
+              <span className="hidden sm:inline">Volver al Dashboard</span>
+              <span className="sm:hidden">Volver</span>
             </Button>
-            <div className="flex items-center gap-3 mb-3">
-              <div className="w-1 h-12 bg-gradient-to-b from-secondary to-primary rounded-full"></div>
-              <div>
-                <h1 className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text text-transparent flex items-center gap-3">
-                  <div className="p-2 rounded-xl bg-gradient-to-br from-secondary/20 to-secondary/10">
-                    <BarChart3 className="w-8 h-8 text-secondary" />
+            <div className="flex items-center gap-2 sm:gap-3 mb-3">
+              <div className="w-1 h-8 sm:h-12 bg-gradient-to-b from-secondary to-primary rounded-full flex-shrink-0"></div>
+              <div className="min-w-0 flex-1">
+                <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text text-transparent flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-3">
+                  <div className="p-1.5 sm:p-2 rounded-xl bg-gradient-to-br from-secondary/20 to-secondary/10 flex-shrink-0">
+                    <BarChart3 className="w-5 h-5 sm:w-6 sm:h-6 md:w-8 md:h-8 text-secondary" />
                   </div>
-                  Métricas Detalladas
+                  <span className="break-words">Métricas Detalladas</span>
                 </h1>
-                <p className="text-muted-foreground mt-2 text-lg">Análisis completo y estadísticas avanzadas de tu plataforma</p>
+                <p className="text-muted-foreground mt-2 text-sm sm:text-base md:text-lg break-words">Análisis completo y estadísticas avanzadas de tu plataforma</p>
               </div>
             </div>
           </div>
 
-          <Tabs defaultValue="overview" className="space-y-6">
-            <TabsList className="grid w-full grid-cols-4">
-              <TabsTrigger value="overview">Resumen</TabsTrigger>
-              <TabsTrigger value="sales">Ventas</TabsTrigger>
-              <TabsTrigger value="events">Eventos</TabsTrigger>
-              <TabsTrigger value="analytics">Análisis</TabsTrigger>
-            </TabsList>
+          <Tabs defaultValue="overview" className="space-y-4 sm:space-y-6">
+            <div className="overflow-x-auto -mx-4 sm:mx-0 px-4 sm:px-0">
+              <TabsList className="grid w-full grid-cols-4 min-w-max sm:min-w-0">
+                <TabsTrigger value="overview" className="text-xs sm:text-sm">Resumen</TabsTrigger>
+                <TabsTrigger value="sales" className="text-xs sm:text-sm">Ventas</TabsTrigger>
+                <TabsTrigger value="events" className="text-xs sm:text-sm">Eventos</TabsTrigger>
+                <TabsTrigger value="analytics" className="text-xs sm:text-sm">Análisis</TabsTrigger>
+              </TabsList>
+            </div>
 
             {/* Tab: Resumen General */}
             <TabsContent value="overview" className="space-y-6">
               {/* KPIs Principales - Mejorados */}
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
                 <Card className="border-2 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 bg-gradient-to-br from-card to-card/80 backdrop-blur-sm group">
                   <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
                     <CardTitle className="text-sm font-semibold text-muted-foreground">Total Eventos</CardTitle>
@@ -225,7 +228,7 @@ const Metrics = () => {
               </div>
 
               {/* Métricas Adicionales - Mejoradas */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
                 <Card className="border-2 shadow-lg bg-gradient-to-br from-card to-card/80">
                   <CardHeader className="pb-4">
                     <CardTitle className="text-lg flex items-center gap-2">
@@ -324,9 +327,10 @@ const Metrics = () => {
                       </CardTitle>
                       <CardDescription className="text-base">Últimos 6 meses - Tendencias de ventas</CardDescription>
                     </CardHeader>
-                    <CardContent>
-                      <ResponsiveContainer width="100%" height={350}>
-                        <AreaChart data={monthlySalesData}>
+                    <CardContent className="overflow-x-auto -mx-4 sm:mx-0 px-4 sm:px-0">
+                      <div className="min-w-[350px] h-[300px] sm:h-[350px] md:h-[400px]">
+                        <ResponsiveContainer width="100%" height="100%">
+                          <AreaChart data={monthlySalesData} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
                           <defs>
                             <linearGradient id="colorAmount" x1="0" y1="0" x2="0" y2="1">
                               <stop offset="5%" stopColor="#8884d8" stopOpacity={0.8}/>
@@ -340,6 +344,7 @@ const Metrics = () => {
                           />
                           <YAxis 
                             tickFormatter={(value) => `$${new Intl.NumberFormat('es-AR', { notation: 'compact' }).format(value)}`}
+                            tick={{ fontSize: 12 }}
                           />
                           <Tooltip 
                             formatter={(value: number) => [`$${new Intl.NumberFormat('es-AR').format(value)}`, 'Ingresos']}
@@ -355,7 +360,8 @@ const Metrics = () => {
                             strokeWidth={2}
                           />
                         </AreaChart>
-                      </ResponsiveContainer>
+                        </ResponsiveContainer>
+                      </div>
                     </CardContent>
                   </Card>
                 )}
@@ -364,27 +370,29 @@ const Metrics = () => {
                 {topEventsData.length > 0 && (
                   <Card className="border-2 shadow-lg bg-gradient-to-br from-card to-card/80">
                     <CardHeader className="pb-4">
-                      <CardTitle className="text-xl flex items-center gap-3">
-                        <div className="p-2 rounded-lg bg-amber-100 dark:bg-amber-900/30">
-                          <DollarSign className="w-5 h-5 text-amber-600 dark:text-amber-400" />
+                      <CardTitle className="text-lg sm:text-xl flex items-center gap-2 sm:gap-3">
+                        <div className="p-1.5 sm:p-2 rounded-lg bg-amber-100 dark:bg-amber-900/30 flex-shrink-0">
+                          <DollarSign className="w-4 h-4 sm:w-5 sm:h-5 text-amber-600 dark:text-amber-400" />
                         </div>
-                        Top Eventos por Ingresos
+                        <span className="break-words">Top Eventos por Ingresos</span>
                       </CardTitle>
-                      <CardDescription className="text-base">Los 10 eventos con mayor recaudación</CardDescription>
+                      <CardDescription className="text-sm sm:text-base">Los 10 eventos con mayor recaudación</CardDescription>
                     </CardHeader>
-                    <CardContent>
-                      <ResponsiveContainer width="100%" height={350}>
-                        <BarChart data={topEventsData.slice(0, 10)} layout="vertical">
+                    <CardContent className="overflow-x-auto -mx-4 sm:mx-0 px-4 sm:px-0">
+                      <div className="min-w-[400px] h-[350px] sm:h-[400px] md:h-[450px]">
+                        <ResponsiveContainer width="100%" height="100%">
+                          <BarChart data={topEventsData.slice(0, 10)} layout="vertical" margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
                           <CartesianGrid strokeDasharray="3 3" />
                           <XAxis type="number" tickFormatter={(value) => `$${new Intl.NumberFormat('es-AR', { notation: 'compact' }).format(value)}`} />
-                          <YAxis dataKey="name" type="category" width={120} tick={{ fontSize: 11 }} />
+                          <YAxis dataKey="name" type="category" width={120} tick={{ fontSize: 12 }} />
                           <Tooltip 
                             formatter={(value: number) => `$${new Intl.NumberFormat('es-AR').format(value)}`}
                             contentStyle={{ backgroundColor: 'rgba(255, 255, 255, 0.95)', border: '1px solid #ccc', borderRadius: '8px' }}
                           />
                           <Bar dataKey="revenue" fill="#82ca9d" name="Ingresos" radius={[0, 8, 8, 0]} />
                         </BarChart>
-                      </ResponsiveContainer>
+                        </ResponsiveContainer>
+                      </div>
                     </CardContent>
                   </Card>
                 )}
@@ -394,26 +402,28 @@ const Metrics = () => {
               {topEventsData.length > 0 && (
                 <Card className="border-2 shadow-lg bg-gradient-to-br from-card to-card/80">
                   <CardHeader className="pb-4">
-                    <CardTitle className="text-xl flex items-center gap-3">
-                      <div className="p-2 rounded-lg bg-green-100 dark:bg-green-900/30">
-                        <Ticket className="w-5 h-5 text-green-600 dark:text-green-400" />
+                    <CardTitle className="text-lg sm:text-xl flex items-center gap-2 sm:gap-3">
+                      <div className="p-1.5 sm:p-2 rounded-lg bg-green-100 dark:bg-green-900/30 flex-shrink-0">
+                        <Ticket className="w-4 h-4 sm:w-5 sm:h-5 text-green-600 dark:text-green-400" />
                       </div>
-                      Top Eventos por Ventas
+                      <span className="break-words">Top Eventos por Ventas</span>
                     </CardTitle>
-                    <CardDescription className="text-base">Los 10 eventos con más entradas vendidas</CardDescription>
+                    <CardDescription className="text-sm sm:text-base">Los 10 eventos con más entradas vendidas</CardDescription>
                   </CardHeader>
-                  <CardContent>
-                    <ResponsiveContainer width="100%" height={400}>
-                      <BarChart data={topEventsData.slice(0, 10)}>
-                        <CartesianGrid strokeDasharray="3 3" />
-                        <XAxis 
-                          dataKey="name" 
-                          angle={-45} 
-                          textAnchor="end" 
-                          height={120}
-                          tick={{ fontSize: 11 }}
-                        />
-                        <YAxis />
+                  <CardContent className="overflow-x-auto -mx-4 sm:mx-0 px-4 sm:px-0">
+                    <div className="min-w-[500px] h-[400px] sm:h-[450px] md:h-[500px]">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <BarChart data={topEventsData.slice(0, 10)} margin={{ top: 5, right: 30, left: 20, bottom: 80 }}>
+                          <CartesianGrid strokeDasharray="3 3" />
+                          <XAxis 
+                            dataKey="name" 
+                            angle={-45} 
+                            textAnchor="end" 
+                            height={100}
+                            tick={{ fontSize: 12 }}
+                            interval={0}
+                          />
+                        <YAxis tick={{ fontSize: 12 }} />
                         <Tooltip 
                           contentStyle={{ backgroundColor: 'rgba(255, 255, 255, 0.95)', border: '1px solid #ccc', borderRadius: '8px' }}
                         />
@@ -421,37 +431,40 @@ const Metrics = () => {
                         <Bar dataKey="tickets" fill="#8884d8" name="Entradas Vendidas" radius={[8, 8, 0, 0]} />
                         <Bar dataKey="revenue" fill="#82ca9d" name="Ingresos (AR$)" radius={[8, 8, 0, 0]} />
                       </BarChart>
-                    </ResponsiveContainer>
+                      </ResponsiveContainer>
+                    </div>
                   </CardContent>
                 </Card>
               )}
             </TabsContent>
 
             {/* Tab: Eventos */}
-            <TabsContent value="events" className="space-y-6">
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <TabsContent value="events" className="space-y-4 sm:space-y-6">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
                 {/* Distribución por categoría - Mejorado */}
                 {categoryData.length > 0 && (
                   <Card className="border-2 shadow-lg bg-gradient-to-br from-card to-card/80">
                     <CardHeader className="pb-4">
-                      <CardTitle className="text-xl flex items-center gap-3">
-                        <div className="p-2 rounded-lg bg-purple-100 dark:bg-purple-900/30">
-                          <BarChart3 className="w-5 h-5 text-purple-600 dark:text-purple-400" />
+                      <CardTitle className="text-lg sm:text-xl flex items-center gap-2 sm:gap-3">
+                        <div className="p-1.5 sm:p-2 rounded-lg bg-purple-100 dark:bg-purple-900/30 flex-shrink-0">
+                          <BarChart3 className="w-4 h-4 sm:w-5 sm:h-5 text-purple-600 dark:text-purple-400" />
                         </div>
-                        Distribución por Categoría
+                        <span className="break-words">Distribución por Categoría</span>
                       </CardTitle>
-                      <CardDescription className="text-base">Eventos agrupados por categoría</CardDescription>
+                      <CardDescription className="text-sm sm:text-base">Eventos agrupados por categoría</CardDescription>
                     </CardHeader>
-                    <CardContent>
-                      <ResponsiveContainer width="100%" height={350}>
-                        <PieChart>
-                          <Pie
-                            data={categoryData}
-                            cx="50%"
-                            cy="50%"
-                            labelLine={false}
-                            label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
-                            outerRadius={100}
+                    <CardContent className="overflow-x-auto -mx-4 sm:mx-0 px-4 sm:px-0">
+                      <div className="min-w-[300px] h-[300px] sm:h-[350px] md:h-[400px]">
+                        <ResponsiveContainer width="100%" height="100%">
+                          <PieChart>
+                            <Pie
+                              data={categoryData}
+                              cx="50%"
+                              cy="50%"
+                              labelLine={false}
+                              label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
+                              outerRadius={100}
+                              label={{ fontSize: 12 }}
                             fill="#8884d8"
                             dataKey="value"
                           >
@@ -459,9 +472,10 @@ const Metrics = () => {
                               <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                             ))}
                           </Pie>
-                          <Tooltip />
-                        </PieChart>
-                      </ResponsiveContainer>
+                            <Tooltip />
+                          </PieChart>
+                        </ResponsiveContainer>
+                      </div>
                     </CardContent>
                   </Card>
                 )}
@@ -470,24 +484,26 @@ const Metrics = () => {
                 {cityData.length > 0 && (
                   <Card className="border-2 shadow-lg bg-gradient-to-br from-card to-card/80">
                     <CardHeader className="pb-4">
-                      <CardTitle className="text-xl flex items-center gap-3">
-                        <div className="p-2 rounded-lg bg-green-100 dark:bg-green-900/30">
-                          <Activity className="w-5 h-5 text-green-600 dark:text-green-400" />
+                      <CardTitle className="text-lg sm:text-xl flex items-center gap-2 sm:gap-3">
+                        <div className="p-1.5 sm:p-2 rounded-lg bg-green-100 dark:bg-green-900/30 flex-shrink-0">
+                          <Activity className="w-4 h-4 sm:w-5 sm:h-5 text-green-600 dark:text-green-400" />
                         </div>
-                        Distribución por Ciudad
+                        <span className="break-words">Distribución por Ciudad</span>
                       </CardTitle>
-                      <CardDescription className="text-base">Eventos agrupados por ubicación</CardDescription>
+                      <CardDescription className="text-sm sm:text-base">Eventos agrupados por ubicación</CardDescription>
                     </CardHeader>
-                    <CardContent>
-                      <ResponsiveContainer width="100%" height={350}>
-                        <PieChart>
-                          <Pie
-                            data={cityData}
-                            cx="50%"
-                            cy="50%"
-                            labelLine={false}
-                            label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
-                            outerRadius={100}
+                    <CardContent className="overflow-x-auto -mx-4 sm:mx-0 px-4 sm:px-0">
+                      <div className="min-w-[300px] h-[300px] sm:h-[350px] md:h-[400px]">
+                        <ResponsiveContainer width="100%" height="100%">
+                          <PieChart>
+                            <Pie
+                              data={cityData}
+                              cx="50%"
+                              cy="50%"
+                              labelLine={false}
+                              label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
+                              outerRadius={100}
+                              label={{ fontSize: 12 }}
                             fill="#8884d8"
                             dataKey="value"
                           >
@@ -495,9 +511,10 @@ const Metrics = () => {
                               <Cell key={`cell-${index}`} fill={COLORS[(index + 2) % COLORS.length]} />
                             ))}
                           </Pie>
-                          <Tooltip />
-                        </PieChart>
-                      </ResponsiveContainer>
+                            <Tooltip />
+                          </PieChart>
+                        </ResponsiveContainer>
+                      </div>
                     </CardContent>
                   </Card>
                 )}
@@ -506,13 +523,13 @@ const Metrics = () => {
               {/* Lista detallada de eventos - Mejorado */}
               <Card className="border-2 shadow-lg bg-gradient-to-br from-card to-card/80">
                 <CardHeader className="pb-4">
-                  <CardTitle className="text-xl flex items-center gap-3">
-                    <div className="p-2 rounded-lg bg-blue-100 dark:bg-blue-900/30">
-                      <Calendar className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+                  <CardTitle className="text-lg sm:text-xl flex items-center gap-2 sm:gap-3">
+                    <div className="p-1.5 sm:p-2 rounded-lg bg-blue-100 dark:bg-blue-900/30 flex-shrink-0">
+                      <Calendar className="w-4 h-4 sm:w-5 sm:h-5 text-blue-600 dark:text-blue-400" />
                     </div>
-                    Eventos Próximos - Detalle Completo
+                    <span className="break-words">Eventos Próximos - Detalle Completo</span>
                   </CardTitle>
-                  <CardDescription className="text-base">Información detallada de los próximos eventos</CardDescription>
+                  <CardDescription className="text-sm sm:text-base">Información detallada de los próximos eventos</CardDescription>
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-4">
@@ -520,19 +537,19 @@ const Metrics = () => {
                       dashboard.upcomingEvents.map((event: any) => (
                         <div
                           key={event.id}
-                          className="p-5 rounded-xl border-2 border-border hover:border-secondary/50 hover:bg-gradient-to-r hover:from-secondary/5 hover:to-transparent transition-all duration-300 cursor-pointer shadow-sm hover:shadow-md"
+                          className="p-4 sm:p-5 rounded-xl border-2 border-border hover:border-secondary/50 hover:bg-gradient-to-r hover:from-secondary/5 hover:to-transparent transition-all duration-300 cursor-pointer shadow-sm hover:shadow-md"
                           onClick={() => navigate(`/admin/events/${event.id}`)}
                         >
-                          <div className="flex items-start justify-between">
-                            <div className="flex-1">
-                              <div className="flex items-center gap-3 mb-2">
-                                <h3 className="font-semibold text-lg">{event.title}</h3>
-                                <Badge variant="outline">{event.category}</Badge>
+                          <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
+                            <div className="flex-1 min-w-0">
+                              <div className="flex flex-wrap items-center gap-2 sm:gap-3 mb-2">
+                                <h3 className="font-semibold text-base sm:text-lg break-words">{event.title}</h3>
+                                <Badge variant="outline" className="text-xs whitespace-nowrap">{event.category}</Badge>
                                 {!event.isPublic && (
-                                  <Badge variant="secondary">Privado</Badge>
+                                  <Badge variant="secondary" className="text-xs whitespace-nowrap">Privado</Badge>
                                 )}
                               </div>
-                              <p className="text-sm text-muted-foreground mb-2">
+                              <p className="text-xs sm:text-sm text-muted-foreground mb-2 break-words">
                                 {new Date(event.date).toLocaleDateString('es-AR', { 
                                   weekday: 'long', 
                                   year: 'numeric', 
@@ -540,7 +557,7 @@ const Metrics = () => {
                                   day: 'numeric' 
                                 })} - {event.venue}, {event.city}
                               </p>
-                              <div className="grid grid-cols-3 gap-4 mt-3">
+                              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-4 mt-3">
                                 <div>
                                   <p className="text-xs text-muted-foreground">Entradas vendidas</p>
                                   <p className="font-semibold">{event._count?.tickets || 0}</p>

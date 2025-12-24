@@ -268,101 +268,101 @@ const EventoDetalle = () => {
       
       <main className="pt-16">
         {/* Hero Banner */}
-        <div className="relative h-[450px] md:h-[550px] overflow-hidden">
+        <div className="relative h-[400px] sm:h-[450px] md:h-[550px] overflow-hidden">
           <div 
             className="absolute inset-0 bg-cover bg-center transition-transform duration-700 hover:scale-105"
             style={{ backgroundImage: `url(${eventData.image})` }}
           />
           <div className="absolute inset-0 bg-gradient-to-t from-background via-background/60 to-transparent" />
           
-          <div className="absolute bottom-0 left-0 right-0 p-6 md:p-12">
-            <div className="container mx-auto">
-              <div className="flex items-center gap-3 mb-4">
-                <Badge className="px-4 py-1.5 bg-secondary text-secondary-foreground text-sm font-semibold">
+          <div className="absolute bottom-0 left-0 right-0 p-4 sm:p-6 md:p-12">
+            <div className="container mx-auto max-w-full overflow-hidden">
+              <div className="flex flex-wrap items-center gap-2 sm:gap-3 mb-3 sm:mb-4">
+                <Badge className="px-3 sm:px-4 py-1 sm:py-1.5 bg-secondary text-secondary-foreground text-xs sm:text-sm font-semibold whitespace-nowrap">
                   {eventData.category}
                 </Badge>
                 {eventData.tickets.length > 0 && (
-                  <Badge variant="outline" className="px-4 py-1.5">
-                    <TicketIcon className="w-3 h-3 mr-1.5" />
-                    {eventData.tickets.reduce((sum, t) => sum + t.available, 0)} entradas disponibles
+                  <Badge variant="outline" className="px-3 sm:px-4 py-1 sm:py-1.5 text-xs sm:text-sm">
+                    <TicketIcon className="w-3 h-3 mr-1 sm:mr-1.5 flex-shrink-0" />
+                    <span className="whitespace-nowrap">{eventData.tickets.reduce((sum, t) => sum + t.available, 0)} entradas disponibles</span>
                   </Badge>
                 )}
               </div>
-              <h1 className="text-3xl md:text-5xl lg:text-6xl font-bold mb-3 drop-shadow-lg">{eventData.title}</h1>
+              <h1 className="text-2xl sm:text-3xl md:text-5xl lg:text-6xl font-bold mb-2 sm:mb-3 drop-shadow-lg break-words">{eventData.title}</h1>
               {eventData.subtitle && (
-                <p className="text-lg md:text-xl text-foreground/90 mb-4 drop-shadow-md">{eventData.subtitle}</p>
+                <p className="text-base sm:text-lg md:text-xl text-foreground/90 mb-3 sm:mb-4 drop-shadow-md break-words">{eventData.subtitle}</p>
               )}
-              <div className="flex flex-wrap items-center gap-4 text-sm md:text-base">
-                <div className="flex items-center gap-2 bg-background/80 backdrop-blur-sm px-3 py-1.5 rounded-full">
-                  <Calendar className="w-4 h-4 text-secondary" />
-                  <span className="font-medium">{eventData.date}</span>
+              <div className="flex flex-wrap items-center gap-2 sm:gap-4 text-xs sm:text-sm md:text-base">
+                <div className="flex items-center gap-2 bg-background/80 backdrop-blur-sm px-2 sm:px-3 py-1 sm:py-1.5 rounded-full flex-shrink-0">
+                  <Calendar className="w-3 h-3 sm:w-4 sm:h-4 text-secondary flex-shrink-0" />
+                  <span className="font-medium whitespace-nowrap">{eventData.date}</span>
                 </div>
-                <div className="flex items-center gap-2 bg-background/80 backdrop-blur-sm px-3 py-1.5 rounded-full">
-                  <Clock className="w-4 h-4 text-secondary" />
-                  <span className="font-medium">{eventData.time}</span>
+                <div className="flex items-center gap-2 bg-background/80 backdrop-blur-sm px-2 sm:px-3 py-1 sm:py-1.5 rounded-full flex-shrink-0">
+                  <Clock className="w-3 h-3 sm:w-4 sm:h-4 text-secondary flex-shrink-0" />
+                  <span className="font-medium whitespace-nowrap">{eventData.time}</span>
                 </div>
-                <div className="flex items-center gap-2 bg-background/80 backdrop-blur-sm px-3 py-1.5 rounded-full">
-                  <MapPin className="w-4 h-4 text-secondary" />
-                  <span className="font-medium">{eventData.city}</span>
+                <div className="flex items-center gap-2 bg-background/80 backdrop-blur-sm px-2 sm:px-3 py-1 sm:py-1.5 rounded-full flex-shrink-0">
+                  <MapPin className="w-3 h-3 sm:w-4 sm:h-4 text-secondary flex-shrink-0" />
+                  <span className="font-medium break-words">{eventData.city}</span>
                 </div>
               </div>
             </div>
           </div>
         </div>
 
-        <div className="container mx-auto px-4 py-8">
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <div className="container mx-auto px-4 sm:px-6 py-6 sm:py-8 max-w-full overflow-hidden">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 sm:gap-8">
             {/* Main Content */}
-            <div className="lg:col-span-2 space-y-6">
+            <div className="lg:col-span-2 space-y-6 min-w-0 overflow-hidden">
               {/* Event Info Cards */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="glass-card rounded-xl p-5 hover-lift transition-all">
+                <div className="glass-card rounded-xl p-4 sm:p-5 hover-lift transition-all overflow-hidden">
                   <div className="flex items-start gap-3">
-                    <div className="p-2 bg-secondary/10 rounded-lg">
+                    <div className="p-2 bg-secondary/10 rounded-lg flex-shrink-0">
                       <Calendar className="w-5 h-5 text-secondary" />
                     </div>
-                    <div className="flex-1">
+                    <div className="flex-1 min-w-0">
                       <p className="text-xs text-muted-foreground uppercase tracking-wide mb-1">Fecha</p>
-                      <p className="font-semibold text-lg">{eventData.date}</p>
+                      <p className="font-semibold text-base sm:text-lg break-words">{eventData.date}</p>
                     </div>
                   </div>
                 </div>
                 
-                <div className="glass-card rounded-xl p-5 hover-lift transition-all">
+                <div className="glass-card rounded-xl p-4 sm:p-5 hover-lift transition-all overflow-hidden">
                   <div className="flex items-start gap-3">
-                    <div className="p-2 bg-secondary/10 rounded-lg">
+                    <div className="p-2 bg-secondary/10 rounded-lg flex-shrink-0">
                       <Clock className="w-5 h-5 text-secondary" />
                     </div>
-                    <div className="flex-1">
+                    <div className="flex-1 min-w-0">
                       <p className="text-xs text-muted-foreground uppercase tracking-wide mb-1">Hora</p>
-                      <p className="font-semibold text-lg">{eventData.time}</p>
+                      <p className="font-semibold text-base sm:text-lg break-words">{eventData.time}</p>
                     </div>
                   </div>
                 </div>
                 
-                <div className="glass-card rounded-xl p-5 hover-lift transition-all">
+                <div className="glass-card rounded-xl p-4 sm:p-5 hover-lift transition-all overflow-hidden">
                   <div className="flex items-start gap-3">
-                    <div className="p-2 bg-secondary/10 rounded-lg">
+                    <div className="p-2 bg-secondary/10 rounded-lg flex-shrink-0">
                       <MapPin className="w-5 h-5 text-secondary" />
                     </div>
-                    <div className="flex-1">
+                    <div className="flex-1 min-w-0">
                       <p className="text-xs text-muted-foreground uppercase tracking-wide mb-1">Lugar</p>
-                      <p className="font-semibold text-lg">{eventData.venue}</p>
+                      <p className="font-semibold text-base sm:text-lg break-words">{eventData.venue}</p>
                       {eventData.address && (
-                        <p className="text-sm text-muted-foreground mt-1">{eventData.address}</p>
+                        <p className="text-sm text-muted-foreground mt-1 break-words">{eventData.address}</p>
                       )}
                     </div>
                   </div>
                 </div>
                 
-                <div className="glass-card rounded-xl p-5 hover-lift transition-all">
+                <div className="glass-card rounded-xl p-4 sm:p-5 hover-lift transition-all overflow-hidden">
                   <div className="flex items-start gap-3">
-                    <div className="p-2 bg-secondary/10 rounded-lg">
+                    <div className="p-2 bg-secondary/10 rounded-lg flex-shrink-0">
                       <Users className="w-5 h-5 text-secondary" />
                     </div>
-                    <div className="flex-1">
+                    <div className="flex-1 min-w-0">
                       <p className="text-xs text-muted-foreground uppercase tracking-wide mb-1">Organizador</p>
-                      <p className="font-semibold text-lg">{eventData.organizer}</p>
+                      <p className="font-semibold text-base sm:text-lg break-words">{eventData.organizer}</p>
                     </div>
                   </div>
                 </div>
@@ -370,13 +370,13 @@ const EventoDetalle = () => {
 
               {/* Description */}
               {eventData.description && (
-                <div className="glass-card rounded-2xl p-6 md:p-8">
+                <div className="glass-card rounded-2xl p-4 sm:p-6 md:p-8 overflow-hidden">
                   <div className="flex items-center gap-2 mb-4">
-                    <Info className="w-5 h-5 text-secondary" />
-                    <h2 className="text-xl md:text-2xl font-semibold">Sobre el evento</h2>
+                    <Info className="w-5 h-5 text-secondary flex-shrink-0" />
+                    <h2 className="text-lg sm:text-xl md:text-2xl font-semibold break-words">Sobre el evento</h2>
                   </div>
                   <Separator className="mb-4" />
-                  <p className="text-muted-foreground whitespace-pre-line leading-relaxed text-base md:text-lg">
+                  <p className="text-muted-foreground whitespace-pre-line leading-relaxed text-sm sm:text-base md:text-lg break-words">
                     {eventData.description}
                   </p>
                 </div>
@@ -384,33 +384,34 @@ const EventoDetalle = () => {
 
               {/* Google Maps */}
               {getGoogleMapsUrl() && (
-                <div className="glass-card rounded-2xl p-6 md:p-8">
-                  <div className="flex items-center justify-between mb-4">
-                    <div className="flex items-center gap-2">
-                      <MapPin className="w-5 h-5 text-secondary" />
-                      <h2 className="text-xl md:text-2xl font-semibold">Ubicación</h2>
+                <div className="glass-card rounded-2xl p-4 sm:p-6 md:p-8 overflow-hidden">
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4 mb-4">
+                    <div className="flex items-center gap-2 min-w-0 flex-1">
+                      <MapPin className="w-5 h-5 text-secondary flex-shrink-0" />
+                      <h2 className="text-lg sm:text-xl md:text-2xl font-semibold truncate">Ubicación</h2>
                     </div>
                     <Button
                       variant="outline"
                       size="sm"
                       onClick={openGoogleMaps}
-                      className="gap-2"
+                      className="gap-2 flex-shrink-0 w-full sm:w-auto"
                     >
                       <ExternalLink className="w-4 h-4" />
-                      Abrir en Maps
+                      <span className="hidden sm:inline">Abrir en Maps</span>
+                      <span className="sm:hidden">Abrir Maps</span>
                     </Button>
                   </div>
                   <Separator className="mb-4" />
                   <div className="space-y-3 mb-4">
-                    <p className="text-sm text-muted-foreground flex items-center gap-2">
-                      <MapPin className="w-4 h-4" />
-                      {eventData.address && `${eventData.address}, `}{eventData.city}
+                    <p className="text-sm text-muted-foreground flex items-center gap-2 break-words">
+                      <MapPin className="w-4 h-4 flex-shrink-0" />
+                      <span>{eventData.address && `${eventData.address}, `}{eventData.city}</span>
                     </p>
                     {eventData.venue && (
-                      <p className="text-sm font-medium">{eventData.venue}</p>
+                      <p className="text-sm font-medium break-words">{eventData.venue}</p>
                     )}
                   </div>
-                  <div className="w-full h-[400px] md:h-[450px] rounded-xl border-2 border-border overflow-hidden shadow-lg">
+                  <div className="w-full h-[300px] sm:h-[400px] md:h-[450px] rounded-xl border-2 border-border overflow-hidden shadow-lg relative">
                     <iframe
                       width="100%"
                       height="100%"
@@ -420,12 +421,12 @@ const EventoDetalle = () => {
                       referrerPolicy="no-referrer-when-downgrade"
                       src={getGoogleMapsUrl()!}
                       title="Ubicación del evento"
-                      className="w-full h-full"
+                      className="w-full h-full absolute inset-0"
                     />
                   </div>
-                  <div className="mt-4 flex items-center gap-2 text-xs text-muted-foreground">
-                    <Navigation className="w-3 h-3" />
-                    <span>Hacé clic en "Abrir en Maps" para obtener direcciones</span>
+                  <div className="mt-4 flex items-center gap-2 text-xs text-muted-foreground flex-wrap">
+                    <Navigation className="w-3 h-3 flex-shrink-0" />
+                    <span className="break-words">Hacé clic en "Abrir en Maps" para obtener direcciones</span>
                   </div>
                 </div>
               )}
@@ -433,14 +434,14 @@ const EventoDetalle = () => {
             </div>
 
             {/* Sidebar - Ticket Selection */}
-            <div className="lg:col-span-1">
-              <div className="glass-card rounded-2xl p-6 sticky top-24 space-y-6 shadow-xl">
-                <div className="flex items-center justify-between pb-4 border-b border-border">
-                  <div className="flex items-center gap-2">
-                    <TicketIcon className="w-5 h-5 text-secondary" />
-                    <h2 className="text-xl font-semibold">Entradas</h2>
+            <div className="lg:col-span-1 order-first lg:order-last">
+              <div className="glass-card rounded-2xl p-4 sm:p-6 lg:sticky lg:top-24 space-y-6 shadow-xl max-w-full overflow-hidden">
+                <div className="flex items-center justify-between pb-4 border-b border-border gap-2">
+                  <div className="flex items-center gap-2 min-w-0 flex-1">
+                    <TicketIcon className="w-5 h-5 text-secondary flex-shrink-0" />
+                    <h2 className="text-lg sm:text-xl font-semibold truncate">Entradas</h2>
                   </div>
-                  <div className="flex gap-2">
+                  <div className="flex gap-2 flex-shrink-0">
                     {user && (
                       <Button
                         variant="ghost"
@@ -468,30 +469,30 @@ const EventoDetalle = () => {
                   </div>
                 </div>
 
-                <div className="space-y-3">
+                <div className="space-y-3 overflow-hidden">
                   {eventData.tickets.length > 0 ? (
                     eventData.tickets.map((ticket, index) => (
                       <div
                         key={ticket.id}
-                        className="p-4 rounded-xl border-2 border-border bg-gradient-to-br from-muted/50 to-background hover:border-secondary/50 transition-all hover:shadow-md"
+                        className="p-4 sm:p-5 rounded-xl border-2 border-border bg-gradient-to-br from-muted/50 to-background hover:border-secondary/50 transition-all hover:shadow-md"
                         style={{ animationDelay: `${index * 0.1}s` }}
                       >
-                        <div className="flex justify-between items-start mb-3">
-                          <div className="flex-1">
-                            <h3 className="font-semibold text-base mb-1">{ticket.name}</h3>
-                            <div className="flex items-center gap-2">
-                              <Badge variant="outline" className="text-xs">
+                        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-3 mb-3">
+                          <div className="flex-1 min-w-0">
+                            <h3 className="font-semibold text-base mb-2">{ticket.name}</h3>
+                            <div className="flex flex-wrap items-center gap-2">
+                              <Badge variant="outline" className="text-xs whitespace-nowrap">
                                 {ticket.available} disponibles
                               </Badge>
                               {ticket.available < 10 && ticket.available > 0 && (
-                                <Badge variant="destructive" className="text-xs animate-pulse">
+                                <Badge variant="destructive" className="text-xs animate-pulse whitespace-nowrap">
                                   ¡Últimas!
                                 </Badge>
                               )}
                             </div>
                           </div>
-                          <div className="text-right ml-3">
-                            <p className="font-bold text-xl text-secondary">
+                          <div className="text-left sm:text-right flex-shrink-0 sm:ml-3">
+                            <p className="font-bold text-xl sm:text-2xl text-secondary break-words">
                               ${ticket.price.toLocaleString('es-AR')}
                             </p>
                             <p className="text-xs text-muted-foreground">ARS</p>
@@ -500,25 +501,25 @@ const EventoDetalle = () => {
                         
                         <Separator className="my-3" />
                         
-                        <div className="flex items-center justify-between">
-                          <span className="text-sm text-muted-foreground">Cantidad</span>
-                          <div className="flex items-center gap-2">
+                        <div className="flex items-center justify-between gap-4">
+                          <span className="text-sm text-muted-foreground whitespace-nowrap">Cantidad</span>
+                          <div className="flex items-center gap-2 flex-shrink-0">
                             <Button
                               variant="outline"
                               size="icon"
-                              className="h-9 w-9 rounded-full"
+                              className="h-9 w-9 sm:h-10 sm:w-10 rounded-full flex-shrink-0"
                               onClick={() => updateQuantity(String(ticket.id), -1)}
                               disabled={!selectedTickets[String(ticket.id)] || ticket.available === 0}
                             >
                               <Minus className="w-4 h-4" />
                             </Button>
-                            <span className="w-10 text-center font-semibold text-lg">
+                            <span className="w-10 sm:w-12 text-center font-semibold text-lg sm:text-xl">
                               {selectedTickets[String(ticket.id)] || 0}
                             </span>
                             <Button
                               variant="outline"
                               size="icon"
-                              className="h-9 w-9 rounded-full"
+                              className="h-9 w-9 sm:h-10 sm:w-10 rounded-full flex-shrink-0"
                               onClick={() => updateQuantity(String(ticket.id), 1)}
                               disabled={ticket.available === 0 || (selectedTickets[String(ticket.id)] || 0) >= ticket.available}
                             >
@@ -541,18 +542,18 @@ const EventoDetalle = () => {
                 <div className="pt-4 border-t border-border space-y-4">
                   {totalTickets > 0 && (
                     <div className="bg-secondary/10 rounded-xl p-4 space-y-2">
-                      <div className="flex justify-between items-center">
-                        <span className="text-sm text-muted-foreground">
+                      <div className="flex justify-between items-center gap-2">
+                        <span className="text-sm text-muted-foreground whitespace-nowrap">
                           {totalTickets} {totalTickets === 1 ? 'entrada' : 'entradas'}
                         </span>
-                        <span className="font-bold text-xl text-secondary">
+                        <span className="font-bold text-lg sm:text-xl text-secondary break-words text-right">
                           ${totalAmount.toLocaleString('es-AR')}
                         </span>
                       </div>
                       <Separator />
-                      <div className="flex justify-between items-center">
-                        <span className="font-semibold">Total</span>
-                        <span className="font-bold text-2xl">${totalAmount.toLocaleString('es-AR')}</span>
+                      <div className="flex justify-between items-center gap-2">
+                        <span className="font-semibold whitespace-nowrap">Total</span>
+                        <span className="font-bold text-xl sm:text-2xl break-words text-right">${totalAmount.toLocaleString('es-AR')}</span>
                       </div>
                     </div>
                   )}
