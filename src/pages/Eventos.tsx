@@ -5,47 +5,61 @@ import Footer from '@/components/layout/Footer';
 import EventCard, { EventCardProps } from '@/components/home/EventCard';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Search, Filter, X, Loader2 } from 'lucide-react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Label } from '@/components/ui/label';
+import { Badge } from '@/components/ui/badge';
+import { Search, Filter, X, Loader2, Calendar, MapPin, Tag, DollarSign, ArrowUpDown, SlidersHorizontal } from 'lucide-react';
 import { eventsApi } from '@/lib/api';
+import { cn } from '@/lib/utils';
 
 const Eventos = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('Todos');
   const [selectedCity, setSelectedCity] = useState('Todas');
+  const [dateFrom, setDateFrom] = useState('');
+  const [dateTo, setDateTo] = useState('');
+  const [sortBy, setSortBy] = useState('date');
   const [showFilters, setShowFilters] = useState(false);
 
-  // Obtener eventos de la API con debounce en búsqueda
+  // Obtener eventos de la API
   const { data: eventsResponse, isLoading, error } = useQuery({
-    queryKey: ['events', searchQuery, selectedCategory, selectedCity],
+    queryKey: ['events', searchQuery, selectedCategory, selectedCity, dateFrom, dateTo, sortBy],
     queryFn: () => eventsApi.list({
       search: searchQuery || undefined,
       category: selectedCategory !== 'Todos' ? selectedCategory : undefined,
       city: selectedCity !== 'Todas' ? selectedCity : undefined,
+      dateFrom: dateFrom || undefined,
+      dateTo: dateTo || undefined,
     }),
-    staleTime: 30000, // Cache por 30 segundos
+    staleTime: 30000,
     retry: 1,
   });
 
   const allEvents: EventCardProps[] = useMemo(() => {
-    // Asegurarse de que data sea un array
     const eventsData = Array.isArray(eventsResponse?.data) 
       ? eventsResponse.data 
       : (eventsResponse?.data?.events || []);
     
     if (!eventsData || eventsData.length === 0) return [];
     
-    return eventsData.map((event: any) => {
-      // Obtener el precio mínimo desde las tandas activas
+    // Filtrar eventos vencidos (que ya pasaron su fecha)
+    const now = new Date();
+    const activeEvents = eventsData.filter((event: any) => {
+      if (!event.date) return false;
+      const eventDate = new Date(event.date);
+      return eventDate >= now;
+    });
+    
+    let mapped = activeEvents.map((event: any) => {
       let minPrice = 0;
       if (event.tandas && event.tandas.length > 0) {
         const prices: number[] = [];
         const now = new Date();
         
-        // Buscar en todas las tandas activas
         event.tandas.forEach((tanda: any) => {
           if (!tanda.isActive) return;
           
-          // Verificar si la tanda está activa según fechas
           const startDate = tanda.startDate ? new Date(tanda.startDate) : null;
           const endDate = tanda.endDate ? new Date(tanda.endDate) : null;
           let isTandaActive = true;
@@ -70,7 +84,6 @@ const Eventos = () => {
           }
         });
         
-        // Si no hay precios en tandas activas, buscar en todas las tandas
         if (prices.length === 0) {
           event.tandas.forEach((tanda: any) => {
             if (tanda.isActive && tanda.tandaTicketTypes && Array.isArray(tanda.tandaTicketTypes)) {
@@ -89,7 +102,6 @@ const Eventos = () => {
         minPrice = prices.length > 0 ? Math.min(...prices) : 0;
       }
 
-      // Formatear fecha
       const eventDate = new Date(event.date);
       const formattedDate = eventDate.toLocaleDateString('es-AR', {
         day: 'numeric',
@@ -97,7 +109,6 @@ const Eventos = () => {
         year: 'numeric',
       });
 
-      // Construir URL de imagen
       const imageUrl = event.image
         ? `${import.meta.env.VITE_BACKEND_URL || 'http://localhost:3000'}${event.image}`
         : 'https://images.unsplash.com/photo-1540039155733-5bb30b53aa14?w=800&q=80';
@@ -111,11 +122,30 @@ const Eventos = () => {
         city: event.city,
         price: minPrice,
         category: event.category,
+        rawDate: eventDate,
       };
     });
-  }, [eventsResponse]);
 
-  // Obtener categorías y ciudades únicas de los eventos
+    // Ordenar eventos
+    mapped.sort((a, b) => {
+      switch (sortBy) {
+        case 'date':
+          return a.rawDate.getTime() - b.rawDate.getTime();
+        case 'price-asc':
+          return a.price - b.price;
+        case 'price-desc':
+          return b.price - a.price;
+        case 'name':
+          return a.title.localeCompare(b.title);
+        default:
+          return 0;
+      }
+    });
+
+    return mapped;
+  }, [eventsResponse, sortBy]);
+
+  // Obtener categorías y ciudades únicas
   const categories = useMemo(() => {
     const cats = new Set<string>();
     const eventsData = Array.isArray(eventsResponse?.data) 
@@ -144,125 +174,194 @@ const Eventos = () => {
     return ['Todas', ...Array.from(citySet).sort()];
   }, [eventsResponse]);
 
-  const filteredEvents = allEvents;
-
   const clearFilters = () => {
     setSearchQuery('');
     setSelectedCategory('Todos');
     setSelectedCity('Todas');
+    setDateFrom('');
+    setDateTo('');
   };
 
-  const hasActiveFilters = searchQuery || selectedCategory !== 'Todos' || selectedCity !== 'Todas';
+  const hasActiveFilters = searchQuery || selectedCategory !== 'Todos' || selectedCity !== 'Todas' || dateFrom || dateTo;
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background transition-colors duration-300">
       <Header />
       
       <main className="pt-24 pb-16">
-        <div className="container mx-auto px-4">
+        <div className="container mx-auto px-4 sm:px-6">
           {/* Page Header */}
           <div className="mb-8">
-            <h1 className="text-3xl md:text-4xl font-bold mb-2">Todos los eventos</h1>
-            <p className="text-muted-foreground">
+            <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold mb-2 bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text text-transparent">
+              Todos los eventos
+            </h1>
+            <p className="text-muted-foreground text-lg">
               {isLoading ? 'Cargando eventos...' : `Encontrá tu próxima experiencia entre ${allEvents.length} eventos disponibles`}
             </p>
           </div>
 
-          {/* Search & Filters */}
-          <div className="glass-card rounded-xl p-4 md:p-6 mb-8">
-            <div className="flex flex-col md:flex-row gap-4">
-              {/* Search */}
-              <div className="flex-1 relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+          {/* Search Bar */}
+          <Card className="mb-6 border-2 shadow-lg bg-gradient-to-br from-card to-card/80">
+            <CardContent className="p-4">
+              <div className="relative">
+                <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
                 <Input
                   type="text"
-                  placeholder="Buscar evento o artista..."
+                  placeholder="Buscar evento, artista o categoría..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-10 h-12"
+                  className="pl-12 h-12 text-base"
                 />
               </div>
+            </CardContent>
+          </Card>
 
-              {/* Filter Toggle (Mobile) */}
-              <Button
-                variant="outline"
-                className="md:hidden"
-                onClick={() => setShowFilters(!showFilters)}
-              >
-                <Filter className="w-4 h-4 mr-2" />
-                Filtros
-              </Button>
+          {/* Filters & Sort */}
+          <div className="mb-8 flex flex-col lg:flex-row gap-4">
+            {/* Filters Card */}
+            <Card className="flex-1 border-2 shadow-lg bg-gradient-to-br from-card to-card/80">
+              <CardHeader className="pb-3">
+                <div className="flex items-center justify-between">
+                  <CardTitle className="text-lg flex items-center gap-2">
+                    <SlidersHorizontal className="w-5 h-5" />
+                    Filtros
+                  </CardTitle>
+                  {hasActiveFilters && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={clearFilters}
+                      className="text-destructive hover:text-destructive"
+                    >
+                      <X className="w-4 h-4 mr-1" />
+                      Limpiar
+                    </Button>
+                  )}
+                </div>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                  {/* Categoría */}
+                  <div className="space-y-2">
+                    <Label className="flex items-center gap-2 text-sm font-medium">
+                      <Tag className="w-4 h-4" />
+                      Categoría
+                    </Label>
+                    <Select value={selectedCategory} onValueChange={setSelectedCategory}>
+                      <SelectTrigger className="h-11">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {categories.map((cat) => (
+                          <SelectItem key={cat} value={cat}>{cat}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
 
-              {/* Desktop Filters */}
-              <div className="hidden md:flex gap-4">
-                <select
-                  value={selectedCategory}
-                  onChange={(e) => setSelectedCategory(e.target.value)}
-                  className="h-12 px-4 rounded-lg border border-border bg-background"
-                >
-                  {categories.map((cat) => (
-                    <option key={cat} value={cat}>{cat}</option>
-                  ))}
-                </select>
+                  {/* Ciudad */}
+                  <div className="space-y-2">
+                    <Label className="flex items-center gap-2 text-sm font-medium">
+                      <MapPin className="w-4 h-4" />
+                      Ciudad
+                    </Label>
+                    <Select value={selectedCity} onValueChange={setSelectedCity}>
+                      <SelectTrigger className="h-11">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {cities.map((city) => (
+                          <SelectItem key={city} value={city}>{city}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
 
-                <select
-                  value={selectedCity}
-                  onChange={(e) => setSelectedCity(e.target.value)}
-                  className="h-12 px-4 rounded-lg border border-border bg-background"
-                >
-                  {cities.map((city) => (
-                    <option key={city} value={city}>{city}</option>
-                  ))}
-                </select>
-              </div>
-            </div>
+                  {/* Fecha Desde */}
+                  <div className="space-y-2">
+                    <Label className="flex items-center gap-2 text-sm font-medium">
+                      <Calendar className="w-4 h-4" />
+                      Desde
+                    </Label>
+                    <Input
+                      type="date"
+                      value={dateFrom}
+                      onChange={(e) => setDateFrom(e.target.value)}
+                      className="h-11"
+                    />
+                  </div>
 
-            {/* Mobile Filters */}
-            {showFilters && (
-              <div className="md:hidden mt-4 pt-4 border-t border-border space-y-4 animate-fade-up">
-                <div>
-                  <label className="text-sm font-medium mb-2 block">Categoría</label>
-                  <select
-                    value={selectedCategory}
-                    onChange={(e) => setSelectedCategory(e.target.value)}
-                    className="w-full h-12 px-4 rounded-lg border border-border bg-background"
-                  >
-                    {categories.map((cat) => (
-                      <option key={cat} value={cat}>{cat}</option>
-                    ))}
-                  </select>
+                  {/* Fecha Hasta */}
+                  <div className="space-y-2">
+                    <Label className="flex items-center gap-2 text-sm font-medium">
+                      <Calendar className="w-4 h-4" />
+                      Hasta
+                    </Label>
+                    <Input
+                      type="date"
+                      value={dateTo}
+                      onChange={(e) => setDateTo(e.target.value)}
+                      className="h-11"
+                      min={dateFrom}
+                    />
+                  </div>
                 </div>
 
-                <div>
-                  <label className="text-sm font-medium mb-2 block">Ciudad</label>
-                  <select
-                    value={selectedCity}
-                    onChange={(e) => setSelectedCity(e.target.value)}
-                    className="w-full h-12 px-4 rounded-lg border border-border bg-background"
-                  >
-                    {cities.map((city) => (
-                      <option key={city} value={city}>{city}</option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-            )}
+                {/* Active Filters Badges */}
+                {hasActiveFilters && (
+                  <div className="flex flex-wrap items-center gap-2 pt-2 border-t">
+                    <span className="text-sm text-muted-foreground">Filtros activos:</span>
+                    {selectedCategory !== 'Todos' && (
+                      <Badge variant="secondary" className="gap-1">
+                        <Tag className="w-3 h-3" />
+                        {selectedCategory}
+                      </Badge>
+                    )}
+                    {selectedCity !== 'Todas' && (
+                      <Badge variant="secondary" className="gap-1">
+                        <MapPin className="w-3 h-3" />
+                        {selectedCity}
+                      </Badge>
+                    )}
+                    {dateFrom && (
+                      <Badge variant="secondary" className="gap-1">
+                        <Calendar className="w-3 h-3" />
+                        Desde: {new Date(dateFrom).toLocaleDateString('es-AR')}
+                      </Badge>
+                    )}
+                    {dateTo && (
+                      <Badge variant="secondary" className="gap-1">
+                        <Calendar className="w-3 h-3" />
+                        Hasta: {new Date(dateTo).toLocaleDateString('es-AR')}
+                      </Badge>
+                    )}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
 
-            {/* Active Filters */}
-            {hasActiveFilters && (
-              <div className="flex items-center gap-2 mt-4 pt-4 border-t border-border">
-                <span className="text-sm text-muted-foreground">Filtros activos:</span>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={clearFilters}
-                  className="text-destructive hover:text-destructive"
-                >
-                  <X className="w-4 h-4 mr-1" />
-                  Limpiar todo
-                </Button>
-              </div>
-            )}
+            {/* Sort Card */}
+            <Card className="lg:w-64 border-2 shadow-lg bg-gradient-to-br from-card to-card/80">
+              <CardHeader className="pb-3">
+                <CardTitle className="text-lg flex items-center gap-2">
+                  <ArrowUpDown className="w-5 h-5" />
+                  Ordenar
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <Select value={sortBy} onValueChange={setSortBy}>
+                  <SelectTrigger className="h-11">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="date">Fecha (próximos)</SelectItem>
+                    <SelectItem value="price-asc">Precio (menor a mayor)</SelectItem>
+                    <SelectItem value="price-desc">Precio (mayor a menor)</SelectItem>
+                    <SelectItem value="name">Nombre (A-Z)</SelectItem>
+                  </SelectContent>
+                </Select>
+              </CardContent>
+            </Card>
           </div>
 
           {/* Results */}
@@ -272,62 +371,67 @@ const Eventos = () => {
               <p className="text-muted-foreground">Cargando eventos...</p>
             </div>
           ) : error ? (
-            <div className="text-center py-16">
-              <p className="text-xl text-muted-foreground mb-4">
-                No se pudieron cargar los eventos
-              </p>
-              <Button variant="outline" onClick={() => window.location.reload()}>
-                Reintentar
-              </Button>
-            </div>
+            <Card className="border-2 shadow-lg">
+              <CardContent className="text-center py-16">
+                <p className="text-xl text-muted-foreground mb-4">
+                  No se pudieron cargar los eventos
+                </p>
+                <Button variant="outline" onClick={() => window.location.reload()}>
+                  Reintentar
+                </Button>
+              </CardContent>
+            </Card>
           ) : (
             <>
               {allEvents.length > 0 && (
-                <div className="mb-4">
+                <div className="mb-6">
                   <p className="text-sm text-muted-foreground">
-                    {filteredEvents.length} eventos encontrados
+                    <span className="font-semibold text-foreground">{allEvents.length}</span> eventos encontrados
                   </p>
                 </div>
               )}
 
               {/* Events Grid */}
-              {filteredEvents.length > 0 ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-              {filteredEvents.map((event, index) => (
-                <div 
-                  key={event.id}
-                  className="animate-fade-up"
-                  style={{ animationDelay: `${index * 0.05}s` }}
-                >
-                  <EventCard {...event} />
+              {allEvents.length > 0 ? (
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                  {allEvents.map((event, index) => (
+                    <div 
+                      key={event.id}
+                      className="animate-fade-up"
+                      style={{ animationDelay: `${index * 0.05}s` }}
+                    >
+                      <EventCard {...event} />
+                    </div>
+                  ))}
                 </div>
-              ))}
-            </div>
-          ) : (
-            <div className="text-center py-16 glass-card rounded-2xl">
-              <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mx-auto mb-4">
-                <Search className="w-8 h-8 text-muted-foreground" />
-              </div>
-              {hasActiveFilters ? (
-                <>
-                  <h3 className="text-xl font-semibold mb-2">No encontramos eventos con esos filtros</h3>
-                  <p className="text-muted-foreground mb-6">
-                    Intentá cambiar los filtros de búsqueda
-                  </p>
-                  <Button variant="outline" onClick={clearFilters}>
-                    Limpiar filtros
-                  </Button>
-                </>
               ) : (
-                <>
-                  <h3 className="text-xl font-semibold mb-2">Aún no hay eventos disponibles</h3>
-                  <p className="text-muted-foreground">
-                    Los eventos aparecerán aquí cuando estén disponibles
-                  </p>
-                </>
+                <Card className="border-2 shadow-lg bg-gradient-to-br from-card to-card/80">
+                  <CardContent className="text-center py-16">
+                    <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mx-auto mb-4">
+                      <Search className="w-8 h-8 text-muted-foreground" />
+                    </div>
+                    {hasActiveFilters ? (
+                      <>
+                        <h3 className="text-xl font-semibold mb-2">No encontramos eventos con esos filtros</h3>
+                        <p className="text-muted-foreground mb-6">
+                          Intentá cambiar los filtros de búsqueda
+                        </p>
+                        <Button variant="outline" onClick={clearFilters}>
+                          <X className="w-4 h-4 mr-2" />
+                          Limpiar filtros
+                        </Button>
+                      </>
+                    ) : (
+                      <>
+                        <h3 className="text-xl font-semibold mb-2">Aún no hay eventos disponibles</h3>
+                        <p className="text-muted-foreground">
+                          Los eventos aparecerán aquí cuando estén disponibles
+                        </p>
+                      </>
+                    )}
+                  </CardContent>
+                </Card>
               )}
-            </div>
-          )}
             </>
           )}
         </div>

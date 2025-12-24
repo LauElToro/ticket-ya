@@ -9,12 +9,11 @@ import PaymentMethods from '@/components/home/PaymentMethods';
 
 const Index = () => {
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background transition-colors duration-300">
       <Header />
       
       <main>
         <HeroSlider />
-        <SearchBar />
         <Categories />
         <FeaturedEvents />
         <HowItWorks />

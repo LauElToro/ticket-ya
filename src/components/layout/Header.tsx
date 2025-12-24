@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { Menu, X, User, LayoutDashboard, LogOut } from 'lucide-react';
+import { Menu, X, User, LayoutDashboard, LogOut, Sun, Moon } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/contexts/AuthContext';
+import { useTheme } from '@/contexts/ThemeContext';
 
 const Header = () => {
   const [isScrolled, setIsScrolled] = useState(false);
@@ -11,6 +12,7 @@ const Header = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const { isAuthenticated, user, logout, isOrganizer } = useAuth();
+  const { theme, toggleTheme } = useTheme();
 
   useEffect(() => {
     const handleScroll = () => {
@@ -31,11 +33,15 @@ const Header = () => {
   return (
     <header
       className={cn(
-        'fixed top-0 left-0 right-0 z-50 transition-all duration-300',
+        'fixed top-0 left-0 right-0 z-50 transition-all duration-300 border-b',
         // En mobile siempre tiene fondo sólido, en desktop puede ser transparente
-        isScrolled
-          ? 'bg-black/95 backdrop-blur-md shadow-soft'
-          : 'bg-black/95 md:bg-transparent backdrop-blur-md md:backdrop-blur-none'
+        theme === 'dark'
+          ? isScrolled
+            ? 'bg-background/95 backdrop-blur-md shadow-soft border-border'
+            : 'bg-background/95 md:bg-background/80 backdrop-blur-md md:backdrop-blur-sm border-border/50'
+          : isScrolled
+            ? 'bg-black/95 backdrop-blur-md shadow-soft border-transparent'
+            : 'bg-black/95 md:bg-transparent backdrop-blur-md md:backdrop-blur-none border-transparent'
       )}
     >
       <div className="container mx-auto px-4">
@@ -57,7 +63,11 @@ const Header = () => {
                   'text-sm font-medium transition-colors duration-200 relative',
                   location.pathname === link.href
                     ? 'text-secondary'
-                    : isScrolled ? 'text-white/80 hover:text-white' : 'text-muted-foreground hover:text-foreground'
+                    : theme === 'dark'
+                      ? 'text-foreground/80 hover:text-foreground'
+                      : isScrolled 
+                        ? 'text-white/80 hover:text-white' 
+                        : 'text-muted-foreground hover:text-foreground'
                 )}
               >
                 {link.label}
@@ -70,6 +80,25 @@ const Header = () => {
 
           {/* Desktop Auth Buttons */}
           <div className="hidden md:flex items-center gap-3">
+            {/* Theme Toggle */}
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={toggleTheme}
+              className={cn(
+                "w-10 h-10 p-0 transition-colors rounded-full",
+                theme === 'light' 
+                  ? "bg-white/10 hover:bg-white/20" 
+                  : "bg-black/20 hover:bg-black/30"
+              )}
+              title={theme === 'light' ? 'Cambiar a modo oscuro' : 'Cambiar a modo claro'}
+            >
+              {theme === 'light' ? (
+                <Moon className="w-5 h-5 text-white" />
+              ) : (
+                <Sun className="w-5 h-5 text-white" />
+              )}
+            </Button>
             {isAuthenticated ? (
               <>
                 {isOrganizer && (
@@ -96,7 +125,12 @@ const Header = () => {
                   variant="outline" 
                   size="sm" 
                   onClick={() => navigate('/login')}
-                  className="bg-white text-foreground hover:bg-white/90 border-white/20"
+                  className={cn(
+                    "border-2 transition-colors",
+                    theme === 'dark'
+                      ? "bg-background text-foreground hover:bg-muted border-border"
+                      : "bg-white text-foreground hover:bg-white/90 border-white/20"
+                  )}
                 >
                   Ingresar
                 </Button>
@@ -121,7 +155,10 @@ const Header = () => {
 
         {/* Mobile Menu */}
         {isMobileMenuOpen && (
-          <div className="md:hidden py-4 border-t border-white/20 animate-fade-up">
+          <div className={cn(
+            "md:hidden py-4 border-t animate-fade-up",
+            theme === 'dark' ? "border-border" : "border-white/20"
+          )}>
             <nav className="flex flex-col gap-2">
               {navLinks.map((link) => (
                 <Link
@@ -131,13 +168,37 @@ const Header = () => {
                     'px-4 py-3 rounded-lg text-sm font-medium transition-colors',
                     location.pathname === link.href
                       ? 'bg-secondary/20 text-secondary'
-                      : 'text-white/80 hover:bg-white/10 hover:text-white'
+                      : theme === 'dark'
+                        ? 'text-foreground/80 hover:bg-muted hover:text-foreground'
+                        : 'text-white/80 hover:bg-white/10 hover:text-white'
                   )}
                   onClick={() => setIsMobileMenuOpen(false)}
                 >
                   {link.label}
                 </Link>
               ))}
+              {/* Mobile Theme Toggle */}
+              <button
+                onClick={toggleTheme}
+                className={cn(
+                  'px-4 py-3 rounded-lg text-sm font-medium transition-colors flex items-center gap-2',
+                  theme === 'light'
+                    ? 'bg-white/10 hover:bg-white/20 text-white'
+                    : 'bg-black/20 hover:bg-black/30 text-white'
+                )}
+              >
+                {theme === 'light' ? (
+                  <>
+                    <Moon className="w-4 h-4" />
+                    Modo Oscuro
+                  </>
+                ) : (
+                  <>
+                    <Sun className="w-4 h-4" />
+                    Modo Claro
+                  </>
+                )}
+              </button>
               {isAuthenticated ? (
                 <div className="mt-4 px-4 space-y-2">
                   {isOrganizer && (
@@ -154,9 +215,12 @@ const Header = () => {
                       Dashboard
                     </Button>
                   )}
-                  <div className="px-4 py-2 rounded-lg bg-white/10 flex items-center gap-2">
-                    <User className="w-4 h-4 text-white" />
-                    <span className="text-sm text-white">{user?.name}</span>
+                  <div className={cn(
+                    "px-4 py-2 rounded-lg flex items-center gap-2",
+                    theme === 'dark' ? "bg-muted" : "bg-white/10"
+                  )}>
+                    <User className={cn("w-4 h-4", theme === 'dark' ? "text-foreground" : "text-white")} />
+                    <span className={cn("text-sm", theme === 'dark' ? "text-foreground" : "text-white")}>{user?.name}</span>
                   </div>
                   <Button
                     variant="outline"
@@ -176,7 +240,12 @@ const Header = () => {
                   <Button
                     variant="outline"
                     size="sm"
-                    className="flex-1 bg-white text-foreground hover:bg-white/90 border-white/20"
+                    className={cn(
+                      "flex-1 border-2 transition-colors",
+                      theme === 'dark'
+                        ? "bg-background text-foreground hover:bg-muted border-border"
+                        : "bg-white text-foreground hover:bg-white/90 border-white/20"
+                    )}
                     onClick={() => {
                       navigate('/login');
                       setIsMobileMenuOpen(false);

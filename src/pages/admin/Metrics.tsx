@@ -22,8 +22,8 @@ const Metrics = () => {
   const dashboard = data?.data;
 
   if (isLoading) {
-    return (
-      <div className="min-h-screen bg-background">
+  return (
+    <div className="min-h-screen bg-background transition-colors duration-300">
         <Header />
         <main className="pt-24 pb-16">
           <div className="container mx-auto px-4">
@@ -96,7 +96,7 @@ const Metrics = () => {
     : 0;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20">
+    <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20 transition-colors duration-300">
       <Header />
       <main className="pt-16 sm:pt-24 pb-16">
         <div className="container mx-auto px-4 sm:px-6 max-w-7xl">

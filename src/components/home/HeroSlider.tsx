@@ -5,9 +5,11 @@ import { ChevronLeft, ChevronRight, Calendar, MapPin, Loader2 } from 'lucide-rea
 import { cn } from '@/lib/utils';
 import { Link, useNavigate } from 'react-router-dom';
 import { eventsApi } from '@/lib/api';
+import { useTheme } from '@/contexts/ThemeContext';
 
 const HeroSlider = () => {
   const navigate = useNavigate();
+  const { theme } = useTheme();
   const [currentSlide, setCurrentSlide] = useState(0);
   const [isAutoPlaying, setIsAutoPlaying] = useState(true);
   const [touchStart, setTouchStart] = useState<number | null>(null);
@@ -202,9 +204,13 @@ const HeroSlider = () => {
             style={{ backgroundImage: `url(${slide.image})` }}
           />
           
-          {/* Overlay */}
-          <div className="absolute inset-0 bg-gradient-to-r from-foreground/80 via-foreground/50 to-transparent" />
-          <div className="absolute inset-0 bg-gradient-to-t from-foreground/60 via-transparent to-foreground/30" />
+          {/* Overlay - Solo en modo claro */}
+          {theme === 'light' && (
+            <>
+              <div className="absolute inset-0 bg-gradient-to-r from-foreground/80 via-foreground/50 to-transparent" />
+              <div className="absolute inset-0 bg-gradient-to-t from-foreground/60 via-transparent to-foreground/30" />
+            </>
+          )}
 
           {/* Content */}
           <div 
@@ -213,21 +219,34 @@ const HeroSlider = () => {
             onPointerDown={(e) => e.stopPropagation()}
           >
             <div className={cn(
-              'max-w-2xl text-card transition-all duration-700 delay-300 relative z-30',
+              'max-w-2xl transition-all duration-700 delay-300 relative z-30',
+              theme === 'dark' ? 'text-white' : 'text-card',
               index === currentSlide ? 'translate-x-0 opacity-100' : '-translate-x-10 opacity-0'
             )}>
               <span className="inline-block px-3 py-1 bg-secondary text-secondary-foreground text-xs font-semibold rounded-full mb-4">
                 🔥 Evento destacado
               </span>
-              <h1 className="text-4xl md:text-6xl font-bold mb-2">{slide.title}</h1>
-              <p className="text-xl md:text-2xl text-card/80 mb-6">{slide.subtitle}</p>
+              <h1 className={cn(
+                "text-4xl md:text-6xl font-bold mb-2",
+                theme === 'dark' ? 'text-white' : 'text-card'
+              )}>{slide.title}</h1>
+              <p className={cn(
+                "text-xl md:text-2xl mb-6",
+                theme === 'dark' ? 'text-white/90' : 'text-card/80'
+              )}>{slide.subtitle}</p>
               
               <div className="flex flex-wrap gap-4 mb-8">
-                <div className="flex items-center gap-2 text-card/90">
+                <div className={cn(
+                  "flex items-center gap-2",
+                  theme === 'dark' ? 'text-white/90' : 'text-card/90'
+                )}>
                   <Calendar className="w-5 h-5" />
                   <span>{slide.date}</span>
                 </div>
-                <div className="flex items-center gap-2 text-card/90">
+                <div className={cn(
+                  "flex items-center gap-2",
+                  theme === 'dark' ? 'text-white/90' : 'text-card/90'
+                )}>
                   <MapPin className="w-5 h-5" />
                   <span>{slide.location}</span>
                 </div>
@@ -249,7 +268,10 @@ const HeroSlider = () => {
                 >
                   Comprar ahora
                 </Button>
-                <span className="text-card/80 font-medium">{slide.price}</span>
+                <span className={cn(
+                  "font-medium",
+                  theme === 'dark' ? 'text-white/90' : 'text-card/80'
+                )}>{slide.price}</span>
               </div>
             </div>
           </div>

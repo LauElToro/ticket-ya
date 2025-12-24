@@ -132,7 +132,15 @@ export const ordersApi = {
 };
 
 export const eventsApi = {
-  list: (params?: { page?: number; limit?: number; category?: string; city?: string; search?: string }) => {
+  list: (params?: { 
+    page?: number; 
+    limit?: number; 
+    category?: string; 
+    city?: string; 
+    search?: string;
+    dateFrom?: string;
+    dateTo?: string;
+  }) => {
     const query = new URLSearchParams();
     if (params) {
       Object.entries(params).forEach(([key, value]) => {
