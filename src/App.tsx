@@ -20,6 +20,7 @@ import Dashboard from "./pages/admin/Dashboard";
 import EventsList from "./pages/admin/EventsList";
 import EventForm from "./pages/admin/EventForm";
 import EventStats from "./pages/admin/EventStats";
+import Metrics from "./pages/admin/Metrics";
 import UsersList from "./pages/admin/UsersList";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
@@ -96,6 +97,14 @@ const App = () => (
               element={
                 <ProtectedRoute requireOrganizer>
                   <EventStats />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/admin/metrics"
+              element={
+                <ProtectedRoute requireOrganizer>
+                  <Metrics />
                 </ProtectedRoute>
               }
             />

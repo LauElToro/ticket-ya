@@ -7,7 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Copy, ExternalLink, TrendingUp, Users, Ticket, DollarSign, Loader2, Edit2, Check, X } from 'lucide-react';
+import { Copy, ExternalLink, TrendingUp, Users, Ticket, DollarSign, Loader2, Edit2, Check, X, Calendar } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { vendedorApi } from '@/lib/api';
 import { toast } from '@/hooks/use-toast';
@@ -134,75 +134,109 @@ const Dashboard = () => {
   const commissionPercent = dashboardData?.data?.vendedor?.commissionPercent || 0;
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20">
       <Header />
       <main className="pt-24 pb-16">
         <div className="container mx-auto px-4 max-w-7xl">
-          <div className="mb-8">
-            <h1 className="text-3xl md:text-4xl font-bold mb-2">Dashboard de Vendedor</h1>
-            <p className="text-muted-foreground">
-              Comisión: {commissionPercent}% | Ganancias totales: ${Number(metrics.totalEarnings).toLocaleString('es-AR')}
-            </p>
+          {/* Header mejorado */}
+          <div className="mb-10">
+            <div className="flex items-center gap-3 mb-3">
+              <div className="w-1 h-12 bg-gradient-to-b from-secondary to-primary rounded-full"></div>
+              <div>
+                <h1 className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text text-transparent">
+                  Dashboard de Vendedor
+                </h1>
+                <p className="text-muted-foreground mt-1 text-lg">
+                  Comisión: <span className="font-semibold text-secondary">{commissionPercent}%</span> | 
+                  Ganancias totales: <span className="font-semibold text-secondary">${Number(metrics.totalEarnings).toLocaleString('es-AR')}</span>
+                </p>
+              </div>
+            </div>
           </div>
 
-          {/* Métricas principales */}
+          {/* Métricas principales - Mejoradas */}
           <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Ventas Totales</CardTitle>
-                <TrendingUp className="h-4 w-4 text-muted-foreground" />
+            <Card className="border-2 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 bg-gradient-to-br from-card to-card/80 backdrop-blur-sm group">
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
+                <CardTitle className="text-sm font-semibold text-muted-foreground">Ventas Totales</CardTitle>
+                <div className="p-2 rounded-lg bg-blue-100 dark:bg-blue-900/30 group-hover:bg-blue-200 dark:group-hover:bg-blue-900/50 transition-colors">
+                  <TrendingUp className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+                </div>
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">{metrics.totalSales}</div>
-                <p className="text-xs text-muted-foreground">Órdenes completadas</p>
+                <div className="text-4xl font-bold mb-1 bg-gradient-to-r from-blue-600 to-blue-400 bg-clip-text text-transparent">
+                  {metrics.totalSales}
+                </div>
+                <p className="text-xs text-muted-foreground font-medium">Órdenes completadas</p>
               </CardContent>
             </Card>
 
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Entradas Vendidas</CardTitle>
-                <Ticket className="h-4 w-4 text-muted-foreground" />
+            <Card className="border-2 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 bg-gradient-to-br from-card to-card/80 backdrop-blur-sm group">
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
+                <CardTitle className="text-sm font-semibold text-muted-foreground">Entradas Vendidas</CardTitle>
+                <div className="p-2 rounded-lg bg-green-100 dark:bg-green-900/30 group-hover:bg-green-200 dark:group-hover:bg-green-900/50 transition-colors">
+                  <Ticket className="h-5 w-5 text-green-600 dark:text-green-400" />
+                </div>
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">{metrics.totalTicketsSold}</div>
-                <p className="text-xs text-muted-foreground">Total de tickets</p>
+                <div className="text-4xl font-bold mb-1 bg-gradient-to-r from-green-600 to-green-400 bg-clip-text text-transparent">
+                  {metrics.totalTicketsSold}
+                </div>
+                <p className="text-xs text-muted-foreground font-medium">Total de tickets</p>
               </CardContent>
             </Card>
 
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Ingresos Totales</CardTitle>
-                <DollarSign className="h-4 w-4 text-muted-foreground" />
+            <Card className="border-2 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 bg-gradient-to-br from-card to-card/80 backdrop-blur-sm group">
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
+                <CardTitle className="text-sm font-semibold text-muted-foreground">Ingresos Totales</CardTitle>
+                <div className="p-2 rounded-lg bg-purple-100 dark:bg-purple-900/30 group-hover:bg-purple-200 dark:group-hover:bg-purple-900/50 transition-colors">
+                  <DollarSign className="h-5 w-5 text-purple-600 dark:text-purple-400" />
+                </div>
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">${Number(metrics.totalRevenue).toLocaleString('es-AR')}</div>
-                <p className="text-xs text-muted-foreground">En ventas generadas</p>
+                <div className="text-3xl font-bold mb-1 bg-gradient-to-r from-purple-600 to-purple-400 bg-clip-text text-transparent">
+                  ${new Intl.NumberFormat('es-AR', { notation: 'compact', maximumFractionDigits: 1 }).format(Number(metrics.totalRevenue))}
+                </div>
+                <p className="text-xs text-muted-foreground font-medium">En ventas generadas</p>
               </CardContent>
             </Card>
 
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Tus Ganancias</CardTitle>
-                <DollarSign className="h-4 w-4 text-secondary" />
+            <Card className="border-2 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 bg-gradient-to-br from-secondary/10 to-card/80 backdrop-blur-sm group border-secondary/30">
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
+                <CardTitle className="text-sm font-semibold text-secondary">Tus Ganancias</CardTitle>
+                <div className="p-2 rounded-lg bg-secondary/20 group-hover:bg-secondary/30 transition-colors">
+                  <DollarSign className="h-5 w-5 text-secondary" />
+                </div>
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold text-secondary">${Number(metrics.totalEarnings).toLocaleString('es-AR')}</div>
-                <p className="text-xs text-muted-foreground">{commissionPercent}% de comisión</p>
+                <div className="text-3xl font-bold mb-1 bg-gradient-to-r from-secondary to-secondary/80 bg-clip-text text-transparent">
+                  ${new Intl.NumberFormat('es-AR', { notation: 'compact', maximumFractionDigits: 1 }).format(Number(metrics.totalEarnings))}
+                </div>
+                <p className="text-xs text-muted-foreground font-medium">{commissionPercent}% de comisión</p>
               </CardContent>
             </Card>
           </div>
 
-          {/* Ventas por evento */}
+          {/* Ventas por evento - Mejorado */}
           {metrics.salesByEvent && metrics.salesByEvent.length > 0 && (
             <div className="mb-8">
-              <h2 className="text-2xl font-bold mb-4">Ventas por Evento</h2>
-              <div className="space-y-4">
+              <div className="flex items-center gap-3 mb-6">
+                <div className="w-1 h-8 bg-gradient-to-b from-secondary to-primary rounded-full"></div>
+                <h2 className="text-3xl font-bold">Ventas por Evento</h2>
+              </div>
+              <div className="space-y-6">
                 {metrics.salesByEvent.map((sale: any, index: number) => (
-                  <Card key={index}>
-                    <CardHeader>
-                      <CardTitle className="text-lg">{sale.event.title}</CardTitle>
-                      <CardDescription>
+                  <Card key={index} className="border-2 shadow-lg hover:shadow-xl transition-all duration-300 bg-gradient-to-br from-card to-card/80">
+                    <CardHeader className="pb-4">
+                      <CardTitle className="text-xl flex items-center gap-3">
+                        <div className="p-2 rounded-lg bg-secondary/10">
+                          <Ticket className="h-5 w-5 text-secondary" />
+                        </div>
+                        {sale.event.title}
+                      </CardTitle>
+                      <CardDescription className="text-base">
                         {new Date(sale.event.date).toLocaleDateString('es-AR', {
+                          weekday: 'long',
                           day: 'numeric',
                           month: 'long',
                           year: 'numeric',
@@ -210,40 +244,73 @@ const Dashboard = () => {
                       </CardDescription>
                     </CardHeader>
                     <CardContent>
-                      <div className="grid grid-cols-3 gap-4">
-                        <div>
-                          <p className="text-sm text-muted-foreground">Entradas Vendidas</p>
-                          <p className="text-2xl font-bold">{sale.ticketsSold}</p>
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+                        <div className="p-4 rounded-xl bg-gradient-to-br from-blue-50 to-blue-100/50 dark:from-blue-900/20 dark:to-blue-900/10 border border-blue-200 dark:border-blue-800">
+                          <p className="text-sm font-semibold text-muted-foreground mb-2">Entradas Vendidas</p>
+                          <p className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-blue-400 bg-clip-text text-transparent">
+                            {sale.ticketsSold}
+                          </p>
                         </div>
-                        <div>
-                          <p className="text-sm text-muted-foreground">Ingresos Generados</p>
-                          <p className="text-2xl font-bold">${Number(sale.revenue).toLocaleString('es-AR')}</p>
+                        <div className="p-4 rounded-xl bg-gradient-to-br from-purple-50 to-purple-100/50 dark:from-purple-900/20 dark:to-purple-900/10 border border-purple-200 dark:border-purple-800">
+                          <p className="text-sm font-semibold text-muted-foreground mb-2">Ingresos Generados</p>
+                          <p className="text-3xl font-bold bg-gradient-to-r from-purple-600 to-purple-400 bg-clip-text text-transparent">
+                            ${new Intl.NumberFormat('es-AR', { notation: 'compact', maximumFractionDigits: 1 }).format(Number(sale.revenue))}
+                          </p>
                         </div>
-                        <div>
-                          <p className="text-sm text-muted-foreground">Tu Comisión</p>
-                          <p className="text-2xl font-bold text-secondary">
-                            ${Number((sale.revenue * commissionPercent) / 100).toLocaleString('es-AR')}
+                        <div className="p-4 rounded-xl bg-gradient-to-br from-secondary/20 to-secondary/10 border border-secondary/30">
+                          <p className="text-sm font-semibold text-secondary mb-2">Tu Comisión</p>
+                          <p className="text-3xl font-bold bg-gradient-to-r from-secondary to-secondary/80 bg-clip-text text-transparent">
+                            ${new Intl.NumberFormat('es-AR', { notation: 'compact', maximumFractionDigits: 1 }).format(Number((sale.revenue * commissionPercent) / 100))}
                           </p>
                         </div>
                       </div>
-                      <div className="mt-4 pt-4 border-t">
-                        <p className="text-sm text-muted-foreground mb-2">Clientes:</p>
-                        <div className="space-y-1">
-                          {sale.orders.slice(0, 5).map((order: any, idx: number) => (
-                            <div key={idx} className="flex items-center justify-between text-sm">
-                              <span>{order.user?.name || 'Cliente'}</span>
-                              <span className="text-muted-foreground">
-                                {order.tickets.length} entrada{order.tickets.length > 1 ? 's' : ''}
-                              </span>
-                            </div>
-                          ))}
-                          {sale.orders.length > 5 && (
-                            <p className="text-xs text-muted-foreground">
-                              +{sale.orders.length - 5} cliente{sale.orders.length - 5 > 1 ? 's' : ''} más
-                            </p>
-                          )}
+                      {sale.orders && sale.orders.length > 0 && (
+                        <div className="mt-6 pt-6 border-t-2 border-border">
+                          <div className="flex items-center justify-between mb-4">
+                            <p className="text-base font-bold text-muted-foreground">Clientes ({sale.orders.length})</p>
+                            {sale.orders.length > 5 && (
+                              <p className="text-xs text-muted-foreground">
+                                Mostrando 5 de {sale.orders.length}
+                              </p>
+                            )}
+                          </div>
+                          <div className="space-y-2 max-h-64 overflow-y-auto">
+                            {sale.orders.slice(0, 5).map((order: any, idx: number) => (
+                              <div 
+                                key={idx} 
+                                className="flex items-center justify-between p-3 rounded-lg bg-gradient-to-r from-muted/50 to-muted/30 hover:from-muted hover:to-muted/80 transition-all duration-200 border border-border/50"
+                              >
+                                <div className="flex items-center gap-3">
+                                  <div className="w-8 h-8 rounded-full bg-secondary/10 flex items-center justify-center text-xs font-bold text-secondary">
+                                    {idx + 1}
+                                  </div>
+                                  <span className="font-semibold">{order.user?.name || 'Cliente'}</span>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                  <Ticket className="w-4 h-4 text-muted-foreground" />
+                                  <span className="text-sm text-muted-foreground font-bold">
+                                    {order.tickets.length} entrada{order.tickets.length > 1 ? 's' : ''}
+                                  </span>
+                                </div>
+                              </div>
+                            ))}
+                            {sale.orders.length > 5 && (
+                              <div className="pt-2 border-t border-border/50">
+                                <p className="text-xs text-muted-foreground text-center font-medium">
+                                  +{sale.orders.length - 5} cliente{sale.orders.length - 5 > 1 ? 's' : ''} más
+                                </p>
+                              </div>
+                            )}
+                          </div>
                         </div>
-                      </div>
+                      )}
+                      {(!sale.orders || sale.orders.length === 0) && (
+                        <div className="mt-6 pt-6 border-t-2 border-border">
+                          <p className="text-sm text-muted-foreground text-center py-4">
+                            No hay clientes registrados para este evento aún.
+                          </p>
+                        </div>
+                      )}
                     </CardContent>
                   </Card>
                 ))}
@@ -251,17 +318,26 @@ const Dashboard = () => {
             </div>
           )}
 
-          {/* Eventos asignados */}
+          {/* Eventos asignados - Mejorado */}
           <div className="mb-8">
-            <h2 className="text-2xl font-bold mb-4">Eventos Asignados</h2>
+            <div className="flex items-center gap-3 mb-6">
+              <div className="w-1 h-8 bg-gradient-to-b from-secondary to-primary rounded-full"></div>
+              <h2 className="text-3xl font-bold">Eventos Asignados</h2>
+            </div>
             {events.length > 0 ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {events.map((ve: any) => (
-                  <Card key={ve.id}>
-                    <CardHeader>
-                      <CardTitle className="text-lg">{ve.event.title}</CardTitle>
-                      <CardDescription>
+                  <Card key={ve.id} className="border-2 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 bg-gradient-to-br from-card to-card/80">
+                    <CardHeader className="pb-4">
+                      <CardTitle className="text-lg flex items-center gap-2">
+                        <div className="p-1.5 rounded-lg bg-secondary/10">
+                          <Calendar className="h-4 w-4 text-secondary" />
+                        </div>
+                        {ve.event.title}
+                      </CardTitle>
+                      <CardDescription className="text-base">
                         {new Date(ve.event.date).toLocaleDateString('es-AR', {
+                          weekday: 'short',
                           day: 'numeric',
                           month: 'long',
                           year: 'numeric',
@@ -269,31 +345,31 @@ const Dashboard = () => {
                       </CardDescription>
                     </CardHeader>
                     <CardContent>
-                      <div className="space-y-2">
-                        <div className="flex justify-between text-sm">
-                          <span className="text-muted-foreground">Vendidas:</span>
-                          <span className="font-semibold">{ve.soldQty}</span>
+                      <div className="space-y-4">
+                        <div className="flex justify-between items-center p-3 rounded-lg bg-muted/50">
+                          <span className="text-sm font-semibold text-muted-foreground">Vendidas:</span>
+                          <span className="text-xl font-bold text-secondary">{ve.soldQty}</span>
                         </div>
                         {ve.ticketLimit && (
-                          <div className="flex justify-between text-sm">
-                            <span className="text-muted-foreground">Límite:</span>
-                            <span className="font-semibold">{ve.ticketLimit}</span>
-                          </div>
-                        )}
-                        {ve.ticketLimit && (
-                          <div className="mt-2">
-                            <div className="w-full bg-muted rounded-full h-2">
-                              <div
-                                className="bg-secondary h-2 rounded-full transition-all"
-                                style={{
-                                  width: `${Math.min((ve.soldQty / ve.ticketLimit) * 100, 100)}%`,
-                                }}
-                              />
+                          <>
+                            <div className="flex justify-between items-center p-3 rounded-lg bg-muted/50">
+                              <span className="text-sm font-semibold text-muted-foreground">Límite:</span>
+                              <span className="text-lg font-bold">{ve.ticketLimit}</span>
                             </div>
-                            <p className="text-xs text-muted-foreground mt-1">
-                              {Math.round((ve.soldQty / ve.ticketLimit) * 100)}% del límite
-                            </p>
-                          </div>
+                            <div className="mt-3">
+                              <div className="w-full bg-muted rounded-full h-3 overflow-hidden">
+                                <div
+                                  className="bg-gradient-to-r from-secondary to-secondary/80 h-3 rounded-full transition-all duration-500 shadow-sm"
+                                  style={{
+                                    width: `${Math.min((ve.soldQty / ve.ticketLimit) * 100, 100)}%`,
+                                  }}
+                                />
+                              </div>
+                              <p className="text-xs text-muted-foreground mt-2 text-center font-semibold">
+                                {Math.round((ve.soldQty / ve.ticketLimit) * 100)}% del límite alcanzado
+                              </p>
+                            </div>
+                          </>
                         )}
                       </div>
                     </CardContent>
@@ -301,44 +377,58 @@ const Dashboard = () => {
                 ))}
               </div>
             ) : (
-              <Card>
-                <CardContent className="py-8 text-center text-muted-foreground">
-                  No tenés eventos asignados aún.
+              <Card className="border-2 border-dashed">
+                <CardContent className="py-12 text-center">
+                  <p className="text-muted-foreground text-lg">No tenés eventos asignados aún.</p>
                 </CardContent>
               </Card>
             )}
           </div>
 
-          {/* Links de referido */}
+          {/* Links de referido - Mejorado */}
           <div>
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-2xl font-bold">Links de Referido</h2>
-              <Button onClick={() => setShowEditAllDialog(true)} variant="outline" size="sm">
+            <div className="flex items-center justify-between mb-6">
+              <div className="flex items-center gap-3">
+                <div className="w-1 h-8 bg-gradient-to-b from-secondary to-primary rounded-full"></div>
+                <h2 className="text-3xl font-bold">Links de Referido</h2>
+              </div>
+              <Button 
+                onClick={() => setShowEditAllDialog(true)} 
+                variant="outline" 
+                size="lg"
+                className="border-2 hover:border-secondary hover:bg-secondary/5 transition-all duration-300"
+              >
                 <Edit2 className="w-4 h-4 mr-2" />
                 Personalizar todos
               </Button>
             </div>
             {referidos.length > 0 ? (
-              <div className="space-y-4">
+              <div className="space-y-6">
                 {referidos.map((referido: any) => (
-                  <Card key={referido.id}>
+                  <Card key={referido.id} className="border-2 shadow-lg hover:shadow-xl transition-all duration-300 bg-gradient-to-br from-card to-card/80">
                     <CardContent className="p-6">
-                      <div className="flex items-start justify-between">
+                      <div className="flex items-start justify-between gap-4">
                         <div className="flex-1">
-                          <h3 className="font-semibold mb-2">{referido.event.title}</h3>
-                          <div className="space-y-2">
+                          <div className="flex items-center gap-3 mb-4">
+                            <div className="p-2 rounded-lg bg-secondary/10">
+                              <Ticket className="h-5 w-5 text-secondary" />
+                            </div>
+                            <h3 className="font-bold text-lg">{referido.event.title}</h3>
+                          </div>
+                          <div className="space-y-4">
                             {editingReferido === referido.id ? (
                               <div className="flex items-center gap-2">
                                 <Input
                                   value={newCode}
                                   onChange={(e) => setNewCode(e.target.value)}
                                   placeholder="Código personalizado"
-                                  className="flex-1"
+                                  className="flex-1 border-2"
                                 />
                                 <Button
                                   size="sm"
                                   onClick={() => handleSaveReferido(referido.id)}
                                   disabled={updateReferidoMutation.isPending}
+                                  className="bg-secondary hover:bg-secondary/90"
                                 >
                                   {updateReferidoMutation.isPending ? (
                                     <Loader2 className="w-4 h-4 animate-spin" />
@@ -359,11 +449,14 @@ const Dashboard = () => {
                               </div>
                             ) : (
                               <div className="flex items-center gap-2">
-                                <code className="px-2 py-1 bg-muted rounded text-sm">{referido.customCode}</code>
+                                <code className="px-4 py-2 bg-muted rounded-lg text-sm font-semibold border-2">
+                                  {referido.customCode}
+                                </code>
                                 <Button
                                   size="sm"
                                   variant="ghost"
                                   onClick={() => handleEditReferido(referido)}
+                                  className="hover:bg-secondary/10"
                                 >
                                   <Edit2 className="w-4 h-4" />
                                 </Button>
@@ -373,12 +466,13 @@ const Dashboard = () => {
                               <Input
                                 value={referido.customUrl}
                                 readOnly
-                                className="flex-1 font-mono text-sm"
+                                className="flex-1 font-mono text-sm border-2 bg-muted/50"
                               />
                               <Button
                                 size="sm"
                                 variant="outline"
                                 onClick={() => handleCopyLink(referido.customUrl)}
+                                className="border-2 hover:border-secondary hover:bg-secondary/5"
                               >
                                 <Copy className="w-4 h-4 mr-2" />
                                 Copiar
@@ -387,13 +481,20 @@ const Dashboard = () => {
                                 size="sm"
                                 variant="outline"
                                 onClick={() => window.open(referido.customUrl, '_blank')}
+                                className="border-2 hover:border-secondary hover:bg-secondary/5"
                               >
                                 <ExternalLink className="w-4 h-4" />
                               </Button>
                             </div>
-                            <div className="flex gap-4 text-sm text-muted-foreground">
-                              <span>Clics: {referido.clickCount}</span>
-                              <span>Conversiones: {referido.conversionCount}</span>
+                            <div className="flex gap-6 p-3 rounded-lg bg-muted/50">
+                              <div className="flex items-center gap-2">
+                                <span className="text-sm font-semibold text-muted-foreground">Clics:</span>
+                                <span className="text-base font-bold">{referido.clickCount}</span>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <span className="text-sm font-semibold text-muted-foreground">Conversiones:</span>
+                                <span className="text-base font-bold text-secondary">{referido.conversionCount}</span>
+                              </div>
                             </div>
                           </div>
                         </div>
@@ -403,9 +504,11 @@ const Dashboard = () => {
                 ))}
               </div>
             ) : (
-              <Card>
-                <CardContent className="py-8 text-center text-muted-foreground">
-                  No tenés links de referido aún. Los links se generan automáticamente cuando se te asignan eventos.
+              <Card className="border-2 border-dashed">
+                <CardContent className="py-12 text-center">
+                  <p className="text-muted-foreground text-lg">
+                    No tenés links de referido aún. Los links se generan automáticamente cuando se te asignan eventos.
+                  </p>
                 </CardContent>
               </Card>
             )}
