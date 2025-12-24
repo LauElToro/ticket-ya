@@ -91,7 +91,12 @@ const Header = () => {
               </>
             ) : (
               <>
-                <Button variant="ghost" size="sm" onClick={() => navigate('/login')}>
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={() => navigate('/login')}
+                  className="bg-white text-foreground hover:bg-white/90 border-white/20"
+                >
                   Ingresar
                 </Button>
                 <Button variant="gradient" size="sm" onClick={() => navigate('/register')}>
@@ -170,7 +175,7 @@ const Header = () => {
                   <Button
                     variant="outline"
                     size="sm"
-                    className="flex-1"
+                    className="flex-1 bg-white text-foreground hover:bg-white/90 border-white/20"
                     onClick={() => {
                       navigate('/login');
                       setIsMobileMenuOpen(false);

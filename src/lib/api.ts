@@ -351,6 +351,8 @@ export const paymentApi = {
 };
 
 export const vendedorApi = {
+  syncReferidos: () =>
+    api.post<{ success: boolean; data: any }>('/vendedores/referidos/sync'),
   getDashboard: () =>
     api.get<{ success: boolean; data: any }>('/vendedores/dashboard'),
   getMetrics: () =>

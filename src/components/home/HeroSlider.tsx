@@ -3,12 +3,15 @@ import { useQuery } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { ChevronLeft, ChevronRight, Calendar, MapPin, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { eventsApi } from '@/lib/api';
 
 const HeroSlider = () => {
+  const navigate = useNavigate();
   const [currentSlide, setCurrentSlide] = useState(0);
   const [isAutoPlaying, setIsAutoPlaying] = useState(true);
+  const [touchStart, setTouchStart] = useState<number | null>(null);
+  const [touchEnd, setTouchEnd] = useState<number | null>(null);
 
   // Obtener eventos destacados para el slider
   const { data: eventsResponse, isLoading, error } = useQuery({
@@ -30,9 +33,59 @@ const HeroSlider = () => {
       .filter((event: any) => event.isActive && new Date(event.date) >= new Date())
       .slice(0, 5)
       .map((event: any) => {
-        const minPrice = event.ticketTypes?.length > 0
-          ? Math.min(...event.ticketTypes.map((tt: any) => Number(tt.price)))
-          : 0;
+        // Obtener el precio mínimo desde las tandas activas
+        let minPrice = 0;
+        if (event.tandas && event.tandas.length > 0) {
+          const prices: number[] = [];
+          const now = new Date();
+          
+          // Buscar en todas las tandas activas
+          event.tandas.forEach((tanda: any) => {
+            if (!tanda.isActive) return;
+            
+            // Verificar si la tanda está activa según fechas
+            const startDate = tanda.startDate ? new Date(tanda.startDate) : null;
+            const endDate = tanda.endDate ? new Date(tanda.endDate) : null;
+            let isTandaActive = true;
+            
+            if (startDate && endDate) {
+              isTandaActive = now >= startDate && now <= endDate;
+            } else if (startDate) {
+              isTandaActive = now >= startDate;
+            } else if (endDate) {
+              isTandaActive = now <= endDate;
+            }
+            
+            if (isTandaActive && tanda.tandaTicketTypes && Array.isArray(tanda.tandaTicketTypes)) {
+              tanda.tandaTicketTypes.forEach((ttt: any) => {
+                if (ttt.price !== undefined && ttt.price !== null) {
+                  const price = Number(ttt.price);
+                  if (!isNaN(price) && price > 0) {
+                    prices.push(price);
+                  }
+                }
+              });
+            }
+          });
+          
+          // Si no hay precios en tandas activas, buscar en todas las tandas
+          if (prices.length === 0) {
+            event.tandas.forEach((tanda: any) => {
+              if (tanda.isActive && tanda.tandaTicketTypes && Array.isArray(tanda.tandaTicketTypes)) {
+                tanda.tandaTicketTypes.forEach((ttt: any) => {
+                  if (ttt.price !== undefined && ttt.price !== null) {
+                    const price = Number(ttt.price);
+                    if (!isNaN(price) && price > 0) {
+                      prices.push(price);
+                    }
+                  }
+                });
+              }
+            });
+          }
+          
+          minPrice = prices.length > 0 ? Math.min(...prices) : 0;
+        }
 
         const eventDate = new Date(event.date);
         const formattedDate = eventDate.toLocaleDateString('es-AR', {
@@ -73,6 +126,31 @@ const HeroSlider = () => {
     return () => clearInterval(interval);
   }, [isAutoPlaying, nextSlide, slides.length]);
 
+  // Swipe handlers para mobile
+  const minSwipeDistance = 50;
+
+  const onTouchStart = (e: React.TouchEvent) => {
+    setTouchEnd(null);
+    setTouchStart(e.targetTouches[0].clientX);
+  };
+
+  const onTouchMove = (e: React.TouchEvent) => {
+    setTouchEnd(e.targetTouches[0].clientX);
+  };
+
+  const onTouchEnd = () => {
+    if (!touchStart || !touchEnd) return;
+    const distance = touchStart - touchEnd;
+    const isLeftSwipe = distance > minSwipeDistance;
+    const isRightSwipe = distance < -minSwipeDistance;
+    
+    if (isLeftSwipe) {
+      nextSlide();
+    } else if (isRightSwipe) {
+      prevSlide();
+    }
+  };
+
   if (isLoading) {
     return (
       <section className="relative h-[600px] md:h-[700px] overflow-hidden flex items-center justify-center bg-muted">
@@ -102,6 +180,9 @@ const HeroSlider = () => {
       className="relative h-[600px] md:h-[700px] overflow-hidden"
       onMouseEnter={() => setIsAutoPlaying(false)}
       onMouseLeave={() => setIsAutoPlaying(true)}
+      onTouchStart={onTouchStart}
+      onTouchMove={onTouchMove}
+      onTouchEnd={onTouchEnd}
     >
       {/* Slides */}
       {slides.map((slide, index) => (
@@ -109,8 +190,11 @@ const HeroSlider = () => {
           key={slide.id}
           className={cn(
             'absolute inset-0 transition-all duration-700 ease-in-out',
-            index === currentSlide ? 'opacity-100 scale-100' : 'opacity-0 scale-105'
+            index === currentSlide ? 'opacity-100 scale-100 z-20' : 'opacity-0 scale-105 z-10 pointer-events-none'
           )}
+          style={{
+            pointerEvents: index === currentSlide ? 'auto' : 'none'
+          }}
         >
           {/* Background Image */}
           <div 
@@ -123,9 +207,13 @@ const HeroSlider = () => {
           <div className="absolute inset-0 bg-gradient-to-t from-foreground/60 via-transparent to-foreground/30" />
 
           {/* Content */}
-          <div className="relative h-full container mx-auto px-4 flex items-center">
+          <div 
+            className="relative h-full container mx-auto px-4 flex items-center z-30"
+            onClick={(e) => e.stopPropagation()}
+            onPointerDown={(e) => e.stopPropagation()}
+          >
             <div className={cn(
-              'max-w-2xl text-card transition-all duration-700 delay-300',
+              'max-w-2xl text-card transition-all duration-700 delay-300 relative z-30',
               index === currentSlide ? 'translate-x-0 opacity-100' : '-translate-x-10 opacity-0'
             )}>
               <span className="inline-block px-3 py-1 bg-secondary text-secondary-foreground text-xs font-semibold rounded-full mb-4">
@@ -145,12 +233,22 @@ const HeroSlider = () => {
                 </div>
               </div>
 
-              <div className="flex flex-wrap items-center gap-4">
-                <Link to={`/evento/${slide.id}`}>
-                  <Button variant="hero" size="xl">
-                    Comprar ahora
-                  </Button>
-                </Link>
+              <div className="flex flex-wrap items-center gap-4 relative z-40">
+                <Button 
+                  variant="hero" 
+                  size="xl" 
+                  className="relative z-40"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    e.preventDefault();
+                    // Usar directamente el slide.id del slide actual
+                    const eventId = slide.id;
+                    console.log('Click en botón - Slide index:', index, 'Current visible slide:', currentSlide, 'Event ID:', eventId);
+                    navigate(`/evento/${eventId}`);
+                  }}
+                >
+                  Comprar ahora
+                </Button>
                 <span className="text-card/80 font-medium">{slide.price}</span>
               </div>
             </div>
@@ -158,19 +256,19 @@ const HeroSlider = () => {
         </div>
       ))}
 
-      {/* Navigation Arrows */}
-      <button
+      {/* Invisible Navigation Areas - Clickeable solo en los bordes extremos */}
+      <div
         onClick={prevSlide}
-        className="absolute left-4 top-1/2 -translate-y-1/2 w-12 h-12 rounded-full bg-card/20 backdrop-blur-sm border border-card/30 flex items-center justify-center text-card hover:bg-card/30 transition-all"
-      >
-        <ChevronLeft className="w-6 h-6" />
-      </button>
-      <button
+        className="absolute left-0 top-0 bottom-0 w-16 md:w-24 z-10 cursor-pointer"
+        aria-label="Slide anterior"
+        style={{ pointerEvents: 'auto' }}
+      />
+      <div
         onClick={nextSlide}
-        className="absolute right-4 top-1/2 -translate-y-1/2 w-12 h-12 rounded-full bg-card/20 backdrop-blur-sm border border-card/30 flex items-center justify-center text-card hover:bg-card/30 transition-all"
-      >
-        <ChevronRight className="w-6 h-6" />
-      </button>
+        className="absolute right-0 top-0 bottom-0 w-16 md:w-24 z-10 cursor-pointer"
+        aria-label="Slide siguiente"
+        style={{ pointerEvents: 'auto' }}
+      />
 
       {/* Dots */}
       <div className="absolute bottom-8 left-1/2 -translate-x-1/2 flex gap-2">

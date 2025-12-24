@@ -35,10 +35,59 @@ const Eventos = () => {
     if (!eventsData || eventsData.length === 0) return [];
     
     return eventsData.map((event: any) => {
-      // Obtener el precio mínimo de los tipos de entrada
-      const minPrice = event.ticketTypes?.length > 0
-        ? Math.min(...event.ticketTypes.map((tt: any) => Number(tt.price)))
-        : 0;
+      // Obtener el precio mínimo desde las tandas activas
+      let minPrice = 0;
+      if (event.tandas && event.tandas.length > 0) {
+        const prices: number[] = [];
+        const now = new Date();
+        
+        // Buscar en todas las tandas activas
+        event.tandas.forEach((tanda: any) => {
+          if (!tanda.isActive) return;
+          
+          // Verificar si la tanda está activa según fechas
+          const startDate = tanda.startDate ? new Date(tanda.startDate) : null;
+          const endDate = tanda.endDate ? new Date(tanda.endDate) : null;
+          let isTandaActive = true;
+          
+          if (startDate && endDate) {
+            isTandaActive = now >= startDate && now <= endDate;
+          } else if (startDate) {
+            isTandaActive = now >= startDate;
+          } else if (endDate) {
+            isTandaActive = now <= endDate;
+          }
+          
+          if (isTandaActive && tanda.tandaTicketTypes && Array.isArray(tanda.tandaTicketTypes)) {
+            tanda.tandaTicketTypes.forEach((ttt: any) => {
+              if (ttt.price !== undefined && ttt.price !== null) {
+                const price = Number(ttt.price);
+                if (!isNaN(price) && price > 0) {
+                  prices.push(price);
+                }
+              }
+            });
+          }
+        });
+        
+        // Si no hay precios en tandas activas, buscar en todas las tandas
+        if (prices.length === 0) {
+          event.tandas.forEach((tanda: any) => {
+            if (tanda.isActive && tanda.tandaTicketTypes && Array.isArray(tanda.tandaTicketTypes)) {
+              tanda.tandaTicketTypes.forEach((ttt: any) => {
+                if (ttt.price !== undefined && ttt.price !== null) {
+                  const price = Number(ttt.price);
+                  if (!isNaN(price) && price > 0) {
+                    prices.push(price);
+                  }
+                }
+              });
+            }
+          });
+        }
+        
+        minPrice = prices.length > 0 ? Math.min(...prices) : 0;
+      }
 
       // Formatear fecha
       const eventDate = new Date(event.date);

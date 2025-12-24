@@ -68,6 +68,24 @@ const Dashboard = () => {
     },
   });
 
+  const syncReferidosMutation = useMutation({
+    mutationFn: () => vendedorApi.syncReferidos(),
+    onSuccess: () => {
+      toast({
+        title: '✅ Links sincronizados',
+        description: 'Se han generado los links de referido para todos tus eventos asignados.',
+      });
+      queryClient.invalidateQueries({ queryKey: ['vendedor-dashboard', user?.id] });
+    },
+    onError: (error: any) => {
+      toast({
+        title: 'Error',
+        description: error.message || 'No se pudieron sincronizar los links.',
+        variant: 'destructive',
+      });
+    },
+  });
+
   const handleCopyLink = (url: string) => {
     navigator.clipboard.writeText(url);
     toast({
@@ -392,15 +410,40 @@ const Dashboard = () => {
                 <div className="w-1 h-8 bg-gradient-to-b from-secondary to-primary rounded-full"></div>
                 <h2 className="text-3xl font-bold">Links de Referido</h2>
               </div>
-              <Button 
-                onClick={() => setShowEditAllDialog(true)} 
-                variant="outline" 
-                size="lg"
-                className="border-2 hover:border-secondary hover:bg-secondary/5 transition-all duration-300"
-              >
-                <Edit2 className="w-4 h-4 mr-2" />
-                Personalizar todos
-              </Button>
+              <div className="flex items-center gap-3">
+                {referidos.length === 0 && events.length > 0 && (
+                  <Button 
+                    onClick={() => syncReferidosMutation.mutate()} 
+                    variant="default"
+                    size="lg"
+                    disabled={syncReferidosMutation.isPending}
+                    className="bg-secondary hover:bg-secondary/90 transition-all duration-300"
+                  >
+                    {syncReferidosMutation.isPending ? (
+                      <>
+                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                        Sincronizando...
+                      </>
+                    ) : (
+                      <>
+                        <Copy className="w-4 h-4 mr-2" />
+                        Generar Links
+                      </>
+                    )}
+                  </Button>
+                )}
+                {referidos.length > 0 && (
+                  <Button 
+                    onClick={() => setShowEditAllDialog(true)} 
+                    variant="outline" 
+                    size="lg"
+                    className="border-2 hover:border-secondary hover:bg-secondary/5 transition-all duration-300"
+                  >
+                    <Edit2 className="w-4 h-4 mr-2" />
+                    Personalizar todos
+                  </Button>
+                )}
+              </div>
             </div>
             {referidos.length > 0 ? (
               <div className="space-y-6">
@@ -448,44 +491,61 @@ const Dashboard = () => {
                                 </Button>
                               </div>
                             ) : (
-                              <div className="flex items-center gap-2">
-                                <code className="px-4 py-2 bg-muted rounded-lg text-sm font-semibold border-2">
-                                  {referido.customCode}
-                                </code>
-                                <Button
-                                  size="sm"
-                                  variant="ghost"
-                                  onClick={() => handleEditReferido(referido)}
-                                  className="hover:bg-secondary/10"
-                                >
-                                  <Edit2 className="w-4 h-4" />
-                                </Button>
+                              <div className="space-y-3">
+                                <div className="flex items-center gap-2">
+                                  <div className="flex-1 p-3 bg-gradient-to-r from-muted/50 to-muted/30 rounded-lg border-2 border-border">
+                                    <p className="text-xs font-semibold text-muted-foreground mb-1">Código de Referido</p>
+                                    <code className="text-base font-bold text-foreground">{referido.customCode}</code>
+                                  </div>
+                                  <Button
+                                    size="sm"
+                                    variant="ghost"
+                                    onClick={() => {
+                                      navigator.clipboard.writeText(referido.customCode);
+                                      toast({
+                                        title: '✅ Código copiado',
+                                        description: 'El código de referido ha sido copiado al portapapeles.',
+                                      });
+                                    }}
+                                    className="hover:bg-secondary/10"
+                                  >
+                                    <Copy className="w-4 h-4" />
+                                  </Button>
+                                  <Button
+                                    size="sm"
+                                    variant="ghost"
+                                    onClick={() => handleEditReferido(referido)}
+                                    className="hover:bg-secondary/10"
+                                  >
+                                    <Edit2 className="w-4 h-4" />
+                                  </Button>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                  <Input
+                                    value={referido.customUrl}
+                                    readOnly
+                                    className="flex-1 font-mono text-sm border-2 bg-muted/50"
+                                  />
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={() => handleCopyLink(referido.customUrl)}
+                                    className="border-2 hover:border-secondary hover:bg-secondary/5"
+                                  >
+                                    <Copy className="w-4 h-4 mr-2" />
+                                    Copiar Link
+                                  </Button>
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={() => window.open(referido.customUrl, '_blank')}
+                                    className="border-2 hover:border-secondary hover:bg-secondary/5"
+                                  >
+                                    <ExternalLink className="w-4 h-4" />
+                                  </Button>
+                                </div>
                               </div>
                             )}
-                            <div className="flex items-center gap-2">
-                              <Input
-                                value={referido.customUrl}
-                                readOnly
-                                className="flex-1 font-mono text-sm border-2 bg-muted/50"
-                              />
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                onClick={() => handleCopyLink(referido.customUrl)}
-                                className="border-2 hover:border-secondary hover:bg-secondary/5"
-                              >
-                                <Copy className="w-4 h-4 mr-2" />
-                                Copiar
-                              </Button>
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                onClick={() => window.open(referido.customUrl, '_blank')}
-                                className="border-2 hover:border-secondary hover:bg-secondary/5"
-                              >
-                                <ExternalLink className="w-4 h-4" />
-                              </Button>
-                            </div>
                             <div className="flex gap-6 p-3 rounded-lg bg-muted/50">
                               <div className="flex items-center gap-2">
                                 <span className="text-sm font-semibold text-muted-foreground">Clics:</span>
@@ -506,9 +566,36 @@ const Dashboard = () => {
             ) : (
               <Card className="border-2 border-dashed">
                 <CardContent className="py-12 text-center">
-                  <p className="text-muted-foreground text-lg">
-                    No tenés links de referido aún. Los links se generan automáticamente cuando se te asignan eventos.
-                  </p>
+                  {events.length > 0 ? (
+                    <>
+                      <p className="text-muted-foreground text-lg mb-4">
+                        No tenés links de referido aún. Hacé clic en "Generar Links" para crearlos automáticamente.
+                      </p>
+                      <Button 
+                        onClick={() => syncReferidosMutation.mutate()} 
+                        variant="default"
+                        size="lg"
+                        disabled={syncReferidosMutation.isPending}
+                        className="bg-secondary hover:bg-secondary/90"
+                      >
+                        {syncReferidosMutation.isPending ? (
+                          <>
+                            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                            Generando...
+                          </>
+                        ) : (
+                          <>
+                            <Copy className="w-4 h-4 mr-2" />
+                            Generar Links de Referido
+                          </>
+                        )}
+                      </Button>
+                    </>
+                  ) : (
+                    <p className="text-muted-foreground text-lg">
+                      No tenés links de referido aún. Los links se generan automáticamente cuando se te asignan eventos.
+                    </p>
+                  )}
                 </CardContent>
               </Card>
             )}
