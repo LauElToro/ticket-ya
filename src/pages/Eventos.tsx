@@ -113,16 +113,37 @@ const Eventos = () => {
         ? `${import.meta.env.VITE_BACKEND_URL || 'http://localhost:3000'}${event.image}`
         : 'https://images.unsplash.com/photo-1540039155733-5bb30b53aa14?w=800&q=80';
 
+      // Calcular entradas disponibles
+      let totalAvailable = 0;
+      let totalTickets = 0;
+      if (event.tandas && event.tandas.length > 0) {
+        event.tandas.forEach((tanda: any) => {
+          if (tanda.isActive && tanda.tandaTicketTypes && Array.isArray(tanda.tandaTicketTypes)) {
+            tanda.tandaTicketTypes.forEach((ttt: any) => {
+              if (ttt.availableQty !== undefined && ttt.availableQty !== null) {
+                totalAvailable += Number(ttt.availableQty);
+              }
+              if (ttt.quantity !== undefined && ttt.quantity !== null) {
+                totalTickets += Number(ttt.quantity);
+              }
+            });
+          }
+        });
+      }
+
       return {
         id: event.id,
         title: event.title,
         image: imageUrl,
         date: formattedDate,
+        time: event.time || undefined,
         venue: event.venue,
         city: event.city,
         price: minPrice,
         category: event.category,
         rawDate: eventDate,
+        availableTickets: totalAvailable > 0 ? totalAvailable : undefined,
+        totalTickets: totalTickets > 0 ? totalTickets : undefined,
       };
     });
 
@@ -397,7 +418,7 @@ const Eventos = () => {
                   {allEvents.map((event, index) => (
                     <div 
                       key={event.id}
-                      className="animate-fade-up"
+                      className="animate-fade-up h-full"
                       style={{ animationDelay: `${index * 0.05}s` }}
                     >
                       <EventCard {...event} />

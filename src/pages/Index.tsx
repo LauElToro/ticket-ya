@@ -1,7 +1,7 @@
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
 import HeroSlider from '@/components/home/HeroSlider';
-import SearchBar from '@/components/home/SearchBar';
+import EventImagesCarousel from '@/components/home/EventImagesCarousel';
 import Categories from '@/components/home/Categories';
 import FeaturedEvents from '@/components/home/FeaturedEvents';
 import HowItWorks from '@/components/home/HowItWorks';
@@ -14,6 +14,7 @@ const Index = () => {
       
       <main>
         <HeroSlider />
+        <EventImagesCarousel />
         <Categories />
         <FeaturedEvents />
         <HowItWorks />
