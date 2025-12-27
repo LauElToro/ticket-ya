@@ -11,7 +11,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Search, Shield, User as UserIcon, Mail, Calendar, Plus, Eye, Edit, UserPlus, Loader2, DollarSign, Ticket, Users, Link as LinkIcon, Trash2, ChevronLeft, ChevronRight, Download } from 'lucide-react';
+import { Search, Shield, User as UserIcon, Mail, Calendar, Plus, Eye, Edit, UserPlus, Loader2, DollarSign, Ticket, Users, Link as LinkIcon, Trash2, ChevronLeft, ChevronRight, Download, ArrowLeft } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { toast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
@@ -307,6 +307,12 @@ const UsersList = () => {
       <Header />
       <main className="pt-24 pb-16">
         <div className="container mx-auto px-4">
+          <div className="mb-6">
+            <Button variant="ghost" onClick={() => navigate('/admin/dashboard')}>
+              <ArrowLeft className="w-4 h-4 mr-2" />
+              Volver al Dashboard
+            </Button>
+          </div>
           <div className="mb-8 flex items-center justify-between">
             <div>
               <h1 className="text-3xl md:text-4xl font-bold mb-2">Gestión de Usuarios</h1>

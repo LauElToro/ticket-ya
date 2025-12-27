@@ -1,25 +1,54 @@
 import { useQuery } from '@tanstack/react-query';
+import { useState, useEffect, useMemo } from 'react';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
 import { adminApi } from '@/lib/api';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Calendar, Users, Ticket, DollarSign, TrendingUp, BarChart3, LineChart as LineChartIcon, Activity, ArrowLeft } from 'lucide-react';
+import { Calendar, Users, Ticket, DollarSign, TrendingUp, BarChart3, LineChart as LineChartIcon, Activity, ArrowLeft, Download, Settings, FileSpreadsheet } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
 import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell, AreaChart, Area } from 'recharts';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import AccountingConfig from '@/components/admin/AccountingConfig';
+import { exportSalesToExcel, exportAllMetricsToExcel, getAccountingConfig, calculateAccounting } from '@/utils/excelExport';
+import { toast } from '@/hooks/use-toast';
 
 const COLORS = ['#8884d8', '#82ca9d', '#ffc658', '#ff7300', '#00ff00', '#0088fe', '#ff00ff'];
 
 const Metrics = () => {
   const navigate = useNavigate();
+  const [accountingConfig, setAccountingConfig] = useState(getAccountingConfig());
+  const [showAccountingConfig, setShowAccountingConfig] = useState(false);
+
   const { data, isLoading } = useQuery({
     queryKey: ['admin-dashboard'],
     queryFn: () => adminApi.getDashboard(),
   });
 
   const dashboard = data?.data;
+
+  // Cargar configuración contable del localStorage
+  useEffect(() => {
+    const stored = localStorage.getItem('accounting-config');
+    if (stored) {
+      setAccountingConfig(JSON.parse(stored));
+    }
+  }, []);
+
+  // Calcular valores contables para todos los eventos
+  const eventsWithAccounting = useMemo(() => {
+    if (!dashboard?.topEvents) return [];
+    return dashboard.topEvents.map((event: any) => {
+      const revenue = event.revenue || 0;
+      const accounting = calculateAccounting(revenue, accountingConfig);
+      return {
+        ...event,
+        accounting,
+      };
+    });
+  }, [dashboard?.topEvents, accountingConfig]);
 
   if (isLoading) {
   return (
@@ -38,18 +67,36 @@ const Metrics = () => {
     );
   }
 
-  // Preparar datos para gráficos
-  const monthlySalesData = dashboard?.monthlySales?.map((item: any) => ({
-    ...item,
-    monthName: new Date(item.month + '-01').toLocaleDateString('es-AR', { month: 'short', year: 'numeric' }),
-  })) || [];
+  // Preparar datos para gráficos con contabilidad
+  const monthlySalesData = dashboard?.monthlySales?.map((item: any) => {
+    const accounting = calculateAccounting(item.amount, accountingConfig);
+    return {
+      ...item,
+      monthName: new Date(item.month + '-01').toLocaleDateString('es-AR', { month: 'short', year: 'numeric' }),
+      revenue: item.amount,
+      costs: accounting.totalCosts,
+      grossProfit: accounting.grossProfit,
+      netProfit: accounting.netProfit,
+    };
+  }) || [];
 
-  const topEventsData = dashboard?.topEvents?.slice(0, 10).map((event: any) => ({
-    name: event.title.length > 25 ? event.title.substring(0, 25) + '...' : event.title,
-    tickets: event._count?.tickets || 0,
-    revenue: event.revenue || 0,
-    fullTitle: event.title,
-  })) || [];
+  // Preparar datos de eventos con contabilidad para gráficos
+  const topEventsData = useMemo(() => {
+    if (!dashboard?.topEvents || dashboard.topEvents.length === 0) return [];
+    return dashboard.topEvents.slice(0, 10).map((event: any) => {
+      const revenue = Number(event.revenue) || 0;
+      const accounting = calculateAccounting(revenue, accountingConfig);
+      return {
+        name: event.title.length > 25 ? event.title.substring(0, 25) + '...' : event.title,
+        fullTitle: event.title,
+        tickets: event._count?.tickets || 0,
+        revenue: revenue,
+        costs: accounting.totalCosts,
+        grossProfit: accounting.grossProfit,
+        netProfit: accounting.netProfit,
+      };
+    });
+  }, [dashboard?.topEvents, accountingConfig]);
 
   const categoryDistribution = dashboard?.events?.reduce((acc: any, event: any) => {
     const category = event.category || 'Sin categoría';
@@ -314,8 +361,163 @@ const Metrics = () => {
 
             {/* Tab: Ventas */}
             <TabsContent value="sales" className="space-y-6">
+              {/* Configuración Contable y Botones de Exportación */}
+              <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
+                <Dialog open={showAccountingConfig} onOpenChange={setShowAccountingConfig}>
+                  <DialogTrigger asChild>
+                    <Button variant="outline" size="lg">
+                      <Settings className="w-4 h-4 mr-2" />
+                      Configurar Contabilidad
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+                    <DialogHeader>
+                      <DialogTitle>Configuración Contable</DialogTitle>
+                      <DialogDescription>
+                        Personaliza los parámetros contables para calcular ganancias, costos y neto
+                      </DialogDescription>
+                    </DialogHeader>
+                    <AccountingConfig
+                      config={accountingConfig}
+                      onSave={(config) => {
+                        setAccountingConfig(config);
+                        setShowAccountingConfig(false);
+                        toast({
+                          title: 'Configuración guardada',
+                          description: 'La configuración contable se ha guardado correctamente',
+                        });
+                      }}
+                    />
+                  </DialogContent>
+                </Dialog>
+
+                <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    size="lg"
+                    onClick={() => {
+                      if (!dashboard?.topEvents) {
+                        toast({
+                          title: 'Error',
+                          description: 'No hay datos de eventos disponibles',
+                          variant: 'destructive',
+                        });
+                        return;
+                      }
+                      const salesData = dashboard.topEvents.map((event: any) => ({
+                        eventId: event.id,
+                        eventTitle: event.title,
+                        eventDate: new Date(event.date).toLocaleDateString('es-AR'),
+                        ticketsSold: event._count?.tickets || 0,
+                        revenue: event.revenue || 0,
+                      }));
+                      exportSalesToExcel(salesData, accountingConfig);
+                      toast({
+                        title: 'Excel descargado',
+                        description: 'El archivo de ventas contables se ha descargado correctamente',
+                      });
+                    }}
+                  >
+                    <FileSpreadsheet className="w-4 h-4 mr-2" />
+                    Descargar Ventas (Excel)
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="lg"
+                    onClick={() => {
+                      if (!dashboard) {
+                        toast({
+                          title: 'Error',
+                          description: 'No hay datos disponibles',
+                          variant: 'destructive',
+                        });
+                        return;
+                      }
+                      exportAllMetricsToExcel(
+                        {
+                          events: dashboard.topEvents || [],
+                          monthlySales: dashboard.monthlySales || [],
+                          metaMetrics: [], // TODO: Integrar métricas de Meta
+                          googleAdsMetrics: [], // TODO: Integrar métricas de Google Ads
+                        },
+                        accountingConfig
+                      );
+                      toast({
+                        title: 'Excel descargado',
+                        description: 'El archivo completo de métricas se ha descargado correctamente',
+                      });
+                    }}
+                  >
+                    <Download className="w-4 h-4 mr-2" />
+                    Descargar Todas las Métricas
+                  </Button>
+                </div>
+              </div>
+
+              {/* Resumen Contable */}
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                {(() => {
+                  const totalRevenue = eventsWithAccounting.reduce((sum, e) => sum + (e.accounting.revenue || 0), 0);
+                  const totalCosts = eventsWithAccounting.reduce((sum, e) => sum + (e.accounting.totalCosts || 0), 0);
+                  const totalGrossProfit = eventsWithAccounting.reduce((sum, e) => sum + (e.accounting.grossProfit || 0), 0);
+                  const totalNetProfit = eventsWithAccounting.reduce((sum, e) => sum + (e.accounting.netProfit || 0), 0);
+
+                  return (
+                    <>
+                      <Card className="border-2 shadow-lg bg-gradient-to-br from-green-50 to-green-100 dark:from-green-900/20 dark:to-green-800/10">
+                        <CardHeader className="pb-3">
+                          <CardTitle className="text-sm font-semibold text-muted-foreground">Ingresos Brutos</CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                          <div className="text-3xl font-bold text-green-600 dark:text-green-400">
+                            ${new Intl.NumberFormat('es-AR', { notation: 'compact', maximumFractionDigits: 1 }).format(totalRevenue)}
+                          </div>
+                          <p className="text-xs text-muted-foreground mt-1">Total de ventas</p>
+                        </CardContent>
+                      </Card>
+
+                      <Card className="border-2 shadow-lg bg-gradient-to-br from-red-50 to-red-100 dark:from-red-900/20 dark:to-red-800/10">
+                        <CardHeader className="pb-3">
+                          <CardTitle className="text-sm font-semibold text-muted-foreground">Total Costos</CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                          <div className="text-3xl font-bold text-red-600 dark:text-red-400">
+                            ${new Intl.NumberFormat('es-AR', { notation: 'compact', maximumFractionDigits: 1 }).format(totalCosts)}
+                          </div>
+                          <p className="text-xs text-muted-foreground mt-1">Costos totales</p>
+                        </CardContent>
+                      </Card>
+
+                      <Card className="border-2 shadow-lg bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/20 dark:to-blue-800/10">
+                        <CardHeader className="pb-3">
+                          <CardTitle className="text-sm font-semibold text-muted-foreground">Ganancia Bruta</CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                          <div className="text-3xl font-bold text-blue-600 dark:text-blue-400">
+                            ${new Intl.NumberFormat('es-AR', { notation: 'compact', maximumFractionDigits: 1 }).format(totalGrossProfit)}
+                          </div>
+                          <p className="text-xs text-muted-foreground mt-1">Ingresos - Costos</p>
+                        </CardContent>
+                      </Card>
+
+                      <Card className="border-2 shadow-lg bg-gradient-to-br from-primary/10 to-primary/5">
+                        <CardHeader className="pb-3">
+                          <CardTitle className="text-sm font-semibold text-muted-foreground">Ganancia Neta</CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                          <div className="text-3xl font-bold text-primary">
+                            ${new Intl.NumberFormat('es-AR', { notation: 'compact', maximumFractionDigits: 1 }).format(totalNetProfit)}
+                          </div>
+                          <p className="text-xs text-muted-foreground mt-1">Ganancia final</p>
+                        </CardContent>
+                      </Card>
+                    </>
+                  );
+                })()}
+              </div>
+
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                {/* Gráfico de ventas por mes - Área - Mejorado */}
+                {/* Gráfico de ventas por mes con contabilidad - Mejorado */}
                 {monthlySalesData.length > 0 && (
                   <Card className="border-2 shadow-lg bg-gradient-to-br from-card to-card/80">
                     <CardHeader className="pb-4">
@@ -323,114 +525,238 @@ const Metrics = () => {
                         <div className="p-2 rounded-lg bg-blue-100 dark:bg-blue-900/30">
                           <LineChartIcon className="w-5 h-5 text-blue-600 dark:text-blue-400" />
                         </div>
-                        Evolución de Ingresos
+                        Evolución Financiera Mensual
                       </CardTitle>
-                      <CardDescription className="text-base">Últimos 6 meses - Tendencias de ventas</CardDescription>
-                    </CardHeader>
-                    <CardContent className="overflow-x-auto -mx-4 sm:mx-0 px-4 sm:px-0">
-                      <div className="min-w-[350px] h-[300px] sm:h-[350px] md:h-[400px]">
-                        <ResponsiveContainer width="100%" height="100%">
-                          <AreaChart data={monthlySalesData} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
-                          <defs>
-                            <linearGradient id="colorAmount" x1="0" y1="0" x2="0" y2="1">
-                              <stop offset="5%" stopColor="#8884d8" stopOpacity={0.8}/>
-                              <stop offset="95%" stopColor="#8884d8" stopOpacity={0}/>
-                            </linearGradient>
-                          </defs>
-                          <CartesianGrid strokeDasharray="3 3" />
-                          <XAxis 
-                            dataKey="monthName"
-                            tick={{ fontSize: 12 }}
-                          />
-                          <YAxis 
-                            tickFormatter={(value) => `$${new Intl.NumberFormat('es-AR', { notation: 'compact' }).format(value)}`}
-                            tick={{ fontSize: 12 }}
-                          />
-                          <Tooltip 
-                            formatter={(value: number) => [`$${new Intl.NumberFormat('es-AR').format(value)}`, 'Ingresos']}
-                            contentStyle={{ backgroundColor: 'rgba(255, 255, 255, 0.95)', border: '1px solid #ccc', borderRadius: '8px' }}
-                          />
-                          <Area 
-                            type="monotone" 
-                            dataKey="amount" 
-                            stroke="#8884d8" 
-                            fillOpacity={1} 
-                            fill="url(#colorAmount)" 
-                            name="Ingresos"
-                            strokeWidth={2}
-                          />
-                        </AreaChart>
-                        </ResponsiveContainer>
-                      </div>
-                    </CardContent>
-                  </Card>
-                )}
-
-                {/* Top eventos por ingresos - Mejorado */}
-                {topEventsData.length > 0 && (
-                  <Card className="border-2 shadow-lg bg-gradient-to-br from-card to-card/80">
-                    <CardHeader className="pb-4">
-                      <CardTitle className="text-lg sm:text-xl flex items-center gap-2 sm:gap-3">
-                        <div className="p-1.5 sm:p-2 rounded-lg bg-amber-100 dark:bg-amber-900/30 flex-shrink-0">
-                          <DollarSign className="w-4 h-4 sm:w-5 sm:h-5 text-amber-600 dark:text-amber-400" />
-                        </div>
-                        <span className="break-words">Top Eventos por Ingresos</span>
-                      </CardTitle>
-                      <CardDescription className="text-sm sm:text-base">Los 10 eventos con mayor recaudación</CardDescription>
+                      <CardDescription className="text-base">
+                        Últimos 6 meses - Ingresos, costos y ganancias
+                      </CardDescription>
                     </CardHeader>
                     <CardContent className="overflow-x-auto -mx-4 sm:mx-0 px-4 sm:px-0">
                       <div className="min-w-[400px] h-[350px] sm:h-[400px] md:h-[450px]">
                         <ResponsiveContainer width="100%" height="100%">
-                          <BarChart data={topEventsData.slice(0, 10)} layout="vertical" margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
-                          <CartesianGrid strokeDasharray="3 3" />
-                          <XAxis type="number" tickFormatter={(value) => `$${new Intl.NumberFormat('es-AR', { notation: 'compact' }).format(value)}`} />
-                          <YAxis dataKey="name" type="category" width={120} tick={{ fontSize: 12 }} />
-                          <Tooltip 
-                            formatter={(value: number) => `$${new Intl.NumberFormat('es-AR').format(value)}`}
-                            contentStyle={{ backgroundColor: 'rgba(255, 255, 255, 0.95)', border: '1px solid #ccc', borderRadius: '8px' }}
-                          />
-                          <Bar dataKey="revenue" fill="#82ca9d" name="Ingresos" radius={[0, 8, 8, 0]} />
-                        </BarChart>
+                          <AreaChart data={monthlySalesData} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
+                            <defs>
+                              <linearGradient id="colorRevenue" x1="0" y1="0" x2="0" y2="1">
+                                <stop offset="5%" stopColor="#22c55e" stopOpacity={0.8}/>
+                                <stop offset="95%" stopColor="#22c55e" stopOpacity={0}/>
+                              </linearGradient>
+                              <linearGradient id="colorCosts" x1="0" y1="0" x2="0" y2="1">
+                                <stop offset="5%" stopColor="#ef4444" stopOpacity={0.6}/>
+                                <stop offset="95%" stopColor="#ef4444" stopOpacity={0}/>
+                              </linearGradient>
+                              <linearGradient id="colorNetProfit" x1="0" y1="0" x2="0" y2="1">
+                                <stop offset="5%" stopColor="#8b5cf6" stopOpacity={0.8}/>
+                                <stop offset="95%" stopColor="#8b5cf6" stopOpacity={0}/>
+                              </linearGradient>
+                            </defs>
+                            <CartesianGrid strokeDasharray="3 3" />
+                            <XAxis 
+                              dataKey="monthName"
+                              tick={{ fontSize: 11 }}
+                            />
+                            <YAxis 
+                              tickFormatter={(value) => `$${new Intl.NumberFormat('es-AR', { notation: 'compact', maximumFractionDigits: 0 }).format(value)}`}
+                              tick={{ fontSize: 11 }}
+                            />
+                            <Tooltip 
+                              formatter={(value: number, name: string) => {
+                                const formatted = `$${new Intl.NumberFormat('es-AR').format(value)}`;
+                                const labels: Record<string, string> = {
+                                  revenue: 'Ingresos Brutos',
+                                  costs: 'Total Costos',
+                                  netProfit: 'Ganancia Neta',
+                                };
+                                return [formatted, labels[name] || name];
+                              }}
+                              contentStyle={{ 
+                                backgroundColor: 'rgba(255, 255, 255, 0.98)', 
+                                border: '1px solid #ccc', 
+                                borderRadius: '8px',
+                                padding: '10px',
+                              }}
+                            />
+                            <Legend 
+                              formatter={(value) => {
+                                const labels: Record<string, string> = {
+                                  revenue: 'Ingresos Brutos',
+                                  costs: 'Total Costos',
+                                  netProfit: 'Ganancia Neta',
+                                };
+                                return labels[value] || value;
+                              }}
+                            />
+                            <Area 
+                              type="monotone" 
+                              dataKey="revenue" 
+                              stroke="#22c55e" 
+                              fillOpacity={0.6} 
+                              fill="url(#colorRevenue)" 
+                              name="revenue"
+                              strokeWidth={2}
+                            />
+                            <Area 
+                              type="monotone" 
+                              dataKey="costs" 
+                              stroke="#ef4444" 
+                              fillOpacity={0.4} 
+                              fill="url(#colorCosts)" 
+                              name="costs"
+                              strokeWidth={2}
+                            />
+                            <Area 
+                              type="monotone" 
+                              dataKey="netProfit" 
+                              stroke="#8b5cf6" 
+                              fillOpacity={0.6} 
+                              fill="url(#colorNetProfit)" 
+                              name="netProfit"
+                              strokeWidth={2}
+                            />
+                          </AreaChart>
                         </ResponsiveContainer>
                       </div>
                     </CardContent>
                   </Card>
                 )}
+
               </div>
 
-              {/* Top eventos por ventas - Mejorado */}
+              {/* Tabla Detallada de Eventos con Contabilidad */}
+              {eventsWithAccounting.length > 0 && (
+                <Card className="border-2 shadow-lg bg-gradient-to-br from-card to-card/80">
+                  <CardHeader className="pb-4">
+                    <CardTitle className="text-lg sm:text-xl flex items-center gap-2 sm:gap-3">
+                      <div className="p-1.5 sm:p-2 rounded-lg bg-purple-100 dark:bg-purple-900/30 flex-shrink-0">
+                        <FileSpreadsheet className="w-4 h-4 sm:w-5 sm:h-5 text-purple-600 dark:text-purple-400" />
+                      </div>
+                      <span className="break-words">Detalle Contable por Evento</span>
+                    </CardTitle>
+                    <CardDescription className="text-sm sm:text-base">
+                      Análisis completo de ingresos, costos y ganancias por evento
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="overflow-x-auto">
+                      <table className="w-full border-collapse">
+                        <thead>
+                          <tr className="border-b-2 border-border">
+                            <th className="text-left p-3 text-sm font-semibold">Evento</th>
+                            <th className="text-right p-3 text-sm font-semibold">Ingresos</th>
+                            <th className="text-right p-3 text-sm font-semibold">Costos</th>
+                            <th className="text-right p-3 text-sm font-semibold">Ganancia Bruta</th>
+                            <th className="text-right p-3 text-sm font-semibold">Ganancia Neta</th>
+                            <th className="text-right p-3 text-sm font-semibold">% Margen</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {eventsWithAccounting.map((event: any) => {
+                            const margin = event.accounting.revenue > 0
+                              ? ((event.accounting.netProfit / event.accounting.revenue) * 100).toFixed(1)
+                              : '0.0';
+                            return (
+                              <tr key={event.id} className="border-b border-border hover:bg-muted/50 transition-colors">
+                                <td className="p-3">
+                                  <div>
+                                    <p className="font-semibold text-sm">{event.title}</p>
+                                    <p className="text-xs text-muted-foreground">
+                                      {new Date(event.date).toLocaleDateString('es-AR')} - {event._count?.tickets || 0} entradas
+                                    </p>
+                                  </div>
+                                </td>
+                                <td className="p-3 text-right">
+                                  <span className="font-semibold text-green-600 dark:text-green-400">
+                                    ${new Intl.NumberFormat('es-AR').format(event.accounting.revenue)}
+                                  </span>
+                                </td>
+                                <td className="p-3 text-right">
+                                  <span className="font-semibold text-red-600 dark:text-red-400">
+                                    ${new Intl.NumberFormat('es-AR').format(event.accounting.totalCosts)}
+                                  </span>
+                                </td>
+                                <td className="p-3 text-right">
+                                  <span className="font-semibold text-blue-600 dark:text-blue-400">
+                                    ${new Intl.NumberFormat('es-AR').format(event.accounting.grossProfit)}
+                                  </span>
+                                </td>
+                                <td className="p-3 text-right">
+                                  <span className={`font-semibold ${event.accounting.netProfit >= 0 ? 'text-primary' : 'text-red-600 dark:text-red-400'}`}>
+                                    ${new Intl.NumberFormat('es-AR').format(event.accounting.netProfit)}
+                                  </span>
+                                </td>
+                                <td className="p-3 text-right">
+                                  <Badge variant={parseFloat(margin) >= 0 ? 'default' : 'destructive'}>
+                                    {margin}%
+                                  </Badge>
+                                </td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* Comparativa de Rentabilidad por Evento */}
               {topEventsData.length > 0 && (
                 <Card className="border-2 shadow-lg bg-gradient-to-br from-card to-card/80">
                   <CardHeader className="pb-4">
                     <CardTitle className="text-lg sm:text-xl flex items-center gap-2 sm:gap-3">
                       <div className="p-1.5 sm:p-2 rounded-lg bg-green-100 dark:bg-green-900/30 flex-shrink-0">
-                        <Ticket className="w-4 h-4 sm:w-5 sm:h-5 text-green-600 dark:text-green-400" />
+                        <TrendingUp className="w-4 h-4 sm:w-5 sm:h-5 text-green-600 dark:text-green-400" />
                       </div>
-                      <span className="break-words">Top Eventos por Ventas</span>
+                      <span className="break-words">Rentabilidad por Evento</span>
                     </CardTitle>
-                    <CardDescription className="text-sm sm:text-base">Los 10 eventos con más entradas vendidas</CardDescription>
+                    <CardDescription className="text-sm sm:text-base">
+                      Comparativa de ingresos vs ganancia neta
+                    </CardDescription>
                   </CardHeader>
                   <CardContent className="overflow-x-auto -mx-4 sm:mx-0 px-4 sm:px-0">
                     <div className="min-w-[500px] h-[400px] sm:h-[450px] md:h-[500px]">
                       <ResponsiveContainer width="100%" height="100%">
-                        <BarChart data={topEventsData.slice(0, 10)} margin={{ top: 5, right: 30, left: 20, bottom: 80 }}>
+                        <BarChart data={topEventsData} margin={{ top: 5, right: 30, left: 20, bottom: 80 }}>
                           <CartesianGrid strokeDasharray="3 3" />
                           <XAxis 
                             dataKey="name" 
                             angle={-45} 
                             textAnchor="end" 
                             height={100}
-                            tick={{ fontSize: 12 }}
+                            tick={{ fontSize: 11 }}
                             interval={0}
                           />
-                        <YAxis tick={{ fontSize: 12 }} />
-                        <Tooltip 
-                          contentStyle={{ backgroundColor: 'rgba(255, 255, 255, 0.95)', border: '1px solid #ccc', borderRadius: '8px' }}
-                        />
-                        <Legend />
-                        <Bar dataKey="tickets" fill="#8884d8" name="Entradas Vendidas" radius={[8, 8, 0, 0]} />
-                        <Bar dataKey="revenue" fill="#82ca9d" name="Ingresos (AR$)" radius={[8, 8, 0, 0]} />
-                      </BarChart>
+                          <YAxis 
+                            tickFormatter={(value) => `$${new Intl.NumberFormat('es-AR', { notation: 'compact', maximumFractionDigits: 0 }).format(value)}`}
+                            tick={{ fontSize: 11 }}
+                          />
+                          <Tooltip 
+                            formatter={(value: number, name: string) => {
+                              const formatted = `$${new Intl.NumberFormat('es-AR').format(value)}`;
+                              const labels: Record<string, string> = {
+                                revenue: 'Ingresos Brutos',
+                                netProfit: 'Ganancia Neta',
+                              };
+                              return [formatted, labels[name] || name];
+                            }}
+                            contentStyle={{ 
+                              backgroundColor: 'rgba(255, 255, 255, 0.98)', 
+                              border: '1px solid #ccc', 
+                              borderRadius: '8px',
+                              padding: '10px',
+                            }}
+                          />
+                          <Legend 
+                            formatter={(value) => {
+                              const labels: Record<string, string> = {
+                                revenue: 'Ingresos Brutos',
+                                netProfit: 'Ganancia Neta',
+                              };
+                              return labels[value] || value;
+                            }}
+                          />
+                          <Bar dataKey="revenue" fill="#22c55e" name="revenue" radius={[8, 8, 0, 0]} />
+                          <Bar dataKey="netProfit" fill="#8b5cf6" name="netProfit" radius={[8, 8, 0, 0]} />
+                        </BarChart>
                       </ResponsiveContainer>
                     </div>
                   </CardContent>

@@ -7,7 +7,7 @@ import { adminApi } from '@/lib/api';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Search, Plus, Edit, Trash2, Eye, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Search, Plus, Edit, Trash2, Eye, ChevronLeft, ChevronRight, ArrowLeft } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 
 const EventsList = () => {
@@ -66,6 +66,12 @@ const EventsList = () => {
       <Header />
       <main className="pt-24 pb-16">
         <div className="container mx-auto px-4 sm:px-6">
+          <div className="mb-6">
+            <Button variant="ghost" onClick={() => navigate('/admin/dashboard')}>
+              <ArrowLeft className="w-4 h-4 mr-2" />
+              Volver al Dashboard
+            </Button>
+          </div>
           <div className="mb-6 sm:mb-8 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
             <div className="min-w-0 flex-1">
               <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold mb-2 break-words">Eventos</h1>

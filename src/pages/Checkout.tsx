@@ -13,6 +13,7 @@ import { cn } from '@/lib/utils';
 import { toast } from '@/hooks/use-toast';
 import { paymentPlacesApi, ordersApi, paymentApi, api } from '@/lib/api';
 import { useAuth } from '@/contexts/AuthContext';
+import { useTrackEvent } from '@/components/TrackingScripts';
 
 const paymentMethods = [
   { id: 'mercadopago', name: 'MercadoPago', icon: Wallet, description: 'Hasta 12 cuotas sin interés' },
@@ -51,6 +52,26 @@ const Checkout = () => {
   const eventData = location.state?.event;
   const selectedTickets = location.state?.tickets || {};
   const refCode = location.state?.refCode; // Código de referido
+  const { trackInitiateCheckout, trackPurchase } = useTrackEvent();
+
+  // Obtener evento completo para tracking
+  const { data: fullEventData } = useQuery({
+    queryKey: ['event', eventData?.id],
+    queryFn: () => {
+      if (!eventData?.id) return null;
+      return fetch(`${import.meta.env.VITE_BACKEND_URL || 'http://localhost:3000'}/api/events/${eventData.id}`)
+        .then(res => res.json())
+        .then(data => data.data);
+    },
+    enabled: !!eventData?.id,
+  });
+
+  // Trackear inicio de checkout
+  useEffect(() => {
+    if (fullEventData && totalAmount > 0) {
+      trackInitiateCheckout(fullEventData.metaPixelId, totalAmount, 'ARS');
+    }
+  }, [fullEventData, totalAmount]);
 
   // Si no hay datos, redirigir a eventos
   if (!eventData || !selectedTickets || Object.keys(selectedTickets).length === 0) {
@@ -192,6 +213,11 @@ const Checkout = () => {
         // Para otros métodos de pago, redirigir a confirmación
         setIsProcessing(false);
         
+        // Trackear compra completada
+        if (fullEventData) {
+          trackPurchase(fullEventData.metaPixelId, fullEventData.googleAdsId, totalAmount, 'ARS');
+        }
+        
         navigate('/confirmacion', { 
           state: { 
             event: eventData, 
@@ -201,6 +227,7 @@ const Checkout = () => {
             paymentPlaces: paymentPlacesData?.data,
             bankAccount: bankAccountData?.data,
             order: orderResponse.data,
+            fullEvent: fullEventData, // Pasar evento completo para tracking
           } 
         });
       }

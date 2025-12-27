@@ -8,6 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { CheckCircle, Download, Mail, Calendar, MapPin, QrCode, AlertCircle, Banknote, Copy, ExternalLink, Clock, Loader2, XCircle } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
+import { useTrackEvent } from '@/components/TrackingScripts';
 
 const Confirmacion = () => {
   const location = useLocation();
@@ -16,9 +17,22 @@ const Confirmacion = () => {
   const [paymentStatus, setPaymentStatus] = useState<string | null>(null);
   const [orderId, setOrderId] = useState<string | null>(null);
   const [countdown, setCountdown] = useState(10);
-  const { event, tickets, formData, paymentMethod, paymentPlaces, bankAccount } = location.state || {};
-  
+  const { event, tickets, formData, paymentMethod, paymentPlaces, bankAccount, fullEvent, order } = location.state || {};
+  const { trackPurchase } = useTrackEvent();
   const isCashPayment = paymentMethod === 'cash';
+
+  // Calcular total para tracking
+  const totalAmount = Object.entries(tickets || {}).reduce((total, [ticketId, qty]) => {
+    const ticket = event?.tickets?.find((t: any) => String(t.id) === String(ticketId));
+    return total + (ticket?.price || 0) * (qty as number);
+  }, 0);
+
+  // Trackear compra cuando se completa el pago
+  useEffect(() => {
+    if ((paymentStatus === 'approved' || isCashPayment) && fullEvent && totalAmount > 0) {
+      trackPurchase(fullEvent.metaPixelId, fullEvent.googleAdsId, totalAmount, 'ARS');
+    }
+  }, [paymentStatus, isCashPayment, fullEvent, totalAmount]);
 
   // Obtener parámetros de la URL (callbacks de MercadoPago)
   useEffect(() => {

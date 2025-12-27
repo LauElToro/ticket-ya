@@ -30,13 +30,55 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    // Recuperar token del localStorage
+    // Recuperar token y refreshToken del localStorage
     const storedToken = localStorage.getItem('token');
+    const storedRefreshToken = localStorage.getItem('refreshToken');
     const storedUser = localStorage.getItem('user');
     
-    if (storedToken) {
+    // Si hay refreshToken pero no token, intentar renovar
+    if (storedRefreshToken && !storedToken) {
+      authApi.refresh(storedRefreshToken)
+        .then((response) => {
+          if (response.success && response.data?.token) {
+            const newToken = response.data.token;
+            setToken(newToken);
+            api.setToken(newToken);
+            // Guardar el nuevo token
+            localStorage.setItem('token', newToken);
+            
+            // Obtener datos del usuario
+            return authApi.getMe();
+          } else {
+            throw new Error('No se pudo renovar el token');
+          }
+        })
+        .then((response) => {
+          if (response?.success && response?.data) {
+            setUser(response.data);
+            localStorage.setItem('user', JSON.stringify(response.data));
+          }
+        })
+        .catch(() => {
+          // Si falla la renovación, limpiar todo
+          setToken(null);
+          setUser(null);
+          api.setToken(null);
+          api.setRefreshToken(null);
+          localStorage.removeItem('token');
+          localStorage.removeItem('refreshToken');
+          localStorage.removeItem('user');
+        })
+        .finally(() => {
+          setIsLoading(false);
+        });
+    } else if (storedToken) {
       setToken(storedToken);
       api.setToken(storedToken);
+      
+      // Si hay refreshToken, guardarlo en el api client
+      if (storedRefreshToken) {
+        api.setRefreshToken(storedRefreshToken);
+      }
       
       // Si hay usuario guardado, usarlo temporalmente mientras validamos
       if (storedUser) {
@@ -55,24 +97,75 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             setUser(response.data);
             localStorage.setItem('user', JSON.stringify(response.data));
           } else {
-            // Si no hay datos, limpiar
+            // Si no hay datos pero hay refreshToken, intentar renovar
+            if (storedRefreshToken) {
+              return authApi.refresh(storedRefreshToken);
+            }
+            throw new Error('Token inválido');
+          }
+        })
+        .then((response) => {
+          // Si se renovó el token
+          if (response?.success && response?.data?.token) {
+            const newToken = response.data.token;
+            setToken(newToken);
+            api.setToken(newToken);
+            localStorage.setItem('token', newToken);
+            return authApi.getMe();
+          }
+        })
+        .then((response) => {
+          if (response?.success && response?.data) {
+            setUser(response.data);
+            localStorage.setItem('user', JSON.stringify(response.data));
+          }
+        })
+        .catch(() => {
+          // Si falla, intentar renovar con refreshToken si existe
+          if (storedRefreshToken) {
+            authApi.refresh(storedRefreshToken)
+              .then((refreshResponse) => {
+                if (refreshResponse.success && refreshResponse.data?.token) {
+                  const newToken = refreshResponse.data.token;
+                  setToken(newToken);
+                  api.setToken(newToken);
+                  localStorage.setItem('token', newToken);
+                  return authApi.getMe();
+                }
+              })
+              .then((meResponse) => {
+                if (meResponse?.success && meResponse?.data) {
+                  setUser(meResponse.data);
+                  localStorage.setItem('user', JSON.stringify(meResponse.data));
+                }
+              })
+              .catch(() => {
+                // Si todo falla, limpiar
+                setToken(null);
+                setUser(null);
+                api.setToken(null);
+                api.setRefreshToken(null);
+                localStorage.removeItem('token');
+                localStorage.removeItem('refreshToken');
+                localStorage.removeItem('user');
+              })
+              .finally(() => {
+                setIsLoading(false);
+              });
+          } else {
+            // Si no hay refreshToken, limpiar la sesión
             setToken(null);
             setUser(null);
             api.setToken(null);
             localStorage.removeItem('token');
             localStorage.removeItem('user');
+            setIsLoading(false);
           }
         })
-        .catch(() => {
-          // Si falla, limpiar la sesión
-          setToken(null);
-          setUser(null);
-          api.setToken(null);
-          localStorage.removeItem('token');
-          localStorage.removeItem('user');
-        })
         .finally(() => {
-          setIsLoading(false);
+          if (!storedRefreshToken) {
+            setIsLoading(false);
+          }
         });
     } else {
       setIsLoading(false);
@@ -83,11 +176,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       const response = await authApi.login(email, password);
       if (response.success && response.data) {
-        const { token: newToken, user: userData } = response.data;
+        const { token: newToken, refreshToken, user: userData } = response.data;
         setToken(newToken);
         setUser(userData);
         api.setToken(newToken);
+        api.setRefreshToken(refreshToken);
         localStorage.setItem('token', newToken);
+        localStorage.setItem('refreshToken', refreshToken);
         localStorage.setItem('user', JSON.stringify(userData));
       }
     } catch (error) {
@@ -107,7 +202,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setToken(null);
     setUser(null);
     api.setToken(null);
+    api.setRefreshToken(null);
     localStorage.removeItem('token');
+    localStorage.removeItem('refreshToken');
     localStorage.removeItem('user');
   };
 

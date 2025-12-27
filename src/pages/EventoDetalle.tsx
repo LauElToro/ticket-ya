@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import Header from '@/components/layout/Header';
@@ -10,6 +10,7 @@ import { eventsApi, favoriteApi } from '@/lib/api';
 import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
 import { useAuth } from '@/contexts/AuthContext';
+import { TrackingScripts, useTrackEvent } from '@/components/TrackingScripts';
 
 const EventoDetalle = () => {
   const { id } = useParams();
@@ -262,8 +263,23 @@ const EventoDetalle = () => {
     }
   };
 
+  const event = eventResponse?.data;
+  const { trackViewContent } = useTrackEvent();
+
+  // Trackear visualización del contenido
+  useEffect(() => {
+    if (event && event.metaPixelId) {
+      trackViewContent(event.metaPixelId, event.title, event.category);
+    }
+  }, [event?.id, event?.metaPixelId]);
+
   return (
     <div className="min-h-screen bg-background">
+      <TrackingScripts
+        metaPixelId={event?.metaPixelId}
+        googleAdsId={event?.googleAdsId}
+        eventName="ViewContent"
+      />
       <Header />
       
       <main className="pt-16">

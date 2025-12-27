@@ -23,6 +23,7 @@ import EventForm from "./pages/admin/EventForm";
 import EventStats from "./pages/admin/EventStats";
 import Metrics from "./pages/admin/Metrics";
 import UsersList from "./pages/admin/UsersList";
+import Tracking from "./pages/admin/Tracking";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 import NotFound from "./pages/NotFound";
@@ -115,6 +116,14 @@ const App = () => (
               element={
                 <ProtectedRoute requireAdmin>
                   <UsersList />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/admin/tracking"
+              element={
+                <ProtectedRoute requireOrganizer>
+                  <Tracking />
                 </ProtectedRoute>
               }
             />

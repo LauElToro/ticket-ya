@@ -10,7 +10,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { toast } from '@/hooks/use-toast';
-import { Loader2, Plus, Trash2, ArrowLeft, Upload, MapPin, Image as ImageIcon, Calendar, Clock, Building2, MapPin as MapPinIcon, Ticket, AlertCircle, CheckCircle2 } from 'lucide-react';
+import { Loader2, Plus, Trash2, ArrowLeft, Upload, MapPin, Image as ImageIcon, Calendar, Clock, Building2, MapPin as MapPinIcon, Ticket, AlertCircle, CheckCircle2, Info } from 'lucide-react';
 
 interface TandaTicketType {
   name: string; // Nombre del tipo de entrada

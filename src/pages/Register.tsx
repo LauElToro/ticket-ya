@@ -44,13 +44,22 @@ const Register = () => {
 
     setIsLoading(true);
 
+    if (!formData.phone || formData.phone.trim() === '') {
+      toast({
+        title: 'El teléfono es requerido',
+        variant: 'destructive',
+      });
+      setIsLoading(false);
+      return;
+    }
+
     try {
       await register({
         email: formData.email,
         password: formData.password,
         name: formData.name,
         dni: formData.dni,
-        phone: formData.phone || undefined,
+        phone: formData.phone,
       });
       toast({
         title: 'Registro exitoso',
@@ -116,12 +125,13 @@ const Register = () => {
                   />
                 </div>
                 <div>
-                  <Label htmlFor="phone">Teléfono (opcional)</Label>
+                  <Label htmlFor="phone">Teléfono *</Label>
                   <Input
                     id="phone"
                     type="tel"
                     value={formData.phone}
                     onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                    required
                     disabled={isLoading}
                     placeholder="11 1234-5678"
                   />

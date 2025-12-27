@@ -68,7 +68,8 @@ const EventStats = () => {
 
   if (error || !stats || !stats.event) {
     const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
-    const is404 = errorMessage.includes('404') || errorMessage.includes('no encontrado') || errorMessage.includes('NOT_FOUND');
+    const is404 = errorMessage.includes('404') || errorMessage.includes('no encontrado') || errorMessage.includes('NOT_FOUND') || errorMessage.includes('Evento no encontrado');
+    const is403 = errorMessage.includes('403') || errorMessage.includes('No autorizado') || errorMessage.includes('FORBIDDEN');
     
     return (
       <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20">
@@ -87,22 +88,27 @@ const EventStats = () => {
                   <Ticket className="w-8 h-8 text-destructive" />
                 </div>
                 <h2 className="text-2xl font-bold mb-2">
-                  {is404 ? 'No hay evento encontrado' : 'Error al cargar el evento'}
+                  {is404 ? 'No hay evento encontrado' : is403 ? 'Sin permisos' : 'Error al cargar el evento'}
                 </h2>
                 <p className="text-muted-foreground mb-4">
                   {is404 
                     ? 'El evento que estás buscando no existe o no tienes permisos para verlo.'
+                    : is403
+                    ? 'No tienes permisos para ver este evento.'
                     : `Ocurrió un error: ${errorMessage}`
                   }
                 </p>
-                {process.env.NODE_ENV === 'development' && (
-                  <p className="text-xs text-muted-foreground mb-4">
-                    ID del evento: {id}
-                  </p>
-                )}
-                <Button onClick={() => navigate('/admin/events')} variant="outline">
-                  Ver todos los eventos
-                </Button>
+                <p className="text-xs text-muted-foreground mb-4">
+                  ID del evento: {id}
+                </p>
+                <div className="flex gap-2 justify-center">
+                  <Button onClick={() => navigate('/admin/events')} variant="outline">
+                    Ver todos los eventos
+                  </Button>
+                  <Button onClick={() => navigate('/admin/dashboard')} variant="outline">
+                    Ir al Dashboard
+                  </Button>
+                </div>
               </CardContent>
             </Card>
           </div>

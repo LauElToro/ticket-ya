@@ -21,6 +21,23 @@ class ApiClient {
     }
   }
 
+  setRefreshToken(refreshToken: string | null) {
+    if (typeof window !== 'undefined') {
+      if (refreshToken) {
+        localStorage.setItem('refreshToken', refreshToken);
+      } else {
+        localStorage.removeItem('refreshToken');
+      }
+    }
+  }
+
+  getRefreshToken(): string | null {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('refreshToken');
+    }
+    return null;
+  }
+
   private async request<T>(
     endpoint: string,
     options: RequestInit = {}
@@ -48,11 +65,55 @@ class ApiClient {
     });
 
     if (!response.ok) {
-      // Si es error 401, limpiar el token
+      // Si es error 401, intentar renovar el token
       if (response.status === 401) {
+        const refreshToken = this.getRefreshToken();
+        
+        if (refreshToken) {
+          try {
+            // Intentar renovar el token
+            const refreshResponse = await fetch(`${this.baseURL}/auth/refresh`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({ refreshToken }),
+              credentials: 'include',
+            });
+
+            if (refreshResponse.ok) {
+              const refreshData = await refreshResponse.json();
+              if (refreshData.success && refreshData.data?.token) {
+                // Guardar el nuevo token y reintentar la petición original
+                this.setToken(refreshData.data.token);
+                // Reintentar la petición original con el nuevo token
+                const retryHeaders: HeadersInit = {
+                  'Content-Type': 'application/json',
+                  ...options.headers,
+                  'Authorization': `Bearer ${refreshData.data.token}`,
+                };
+                const retryResponse = await fetch(url, {
+                  ...options,
+                  headers: retryHeaders,
+                  credentials: 'include',
+                });
+                
+                if (retryResponse.ok) {
+                  return await retryResponse.json();
+                }
+              }
+            }
+          } catch (refreshError) {
+            console.error('Error al renovar token:', refreshError);
+          }
+        }
+        
+        // Si no se pudo renovar, limpiar todo y redirigir a login
         this.setToken(null);
+        this.setRefreshToken(null);
         if (typeof window !== 'undefined') {
           localStorage.removeItem('token');
+          localStorage.removeItem('refreshToken');
           localStorage.removeItem('user');
           // Redirigir a login si estamos en el navegador
           if (window.location.pathname !== '/login' && window.location.pathname !== '/register') {
@@ -127,11 +188,32 @@ export const ordersApi = {
   getById: (id: string) =>
     api.get<{ success: boolean; data: any }>(`/orders/${id}`),
   
+  getMyOrders: () =>
+    api.get<{ success: boolean; data: any[] }>('/orders/my'),
+  
   confirmPayment: (id: string, data: any) =>
     api.post<{ success: boolean; data: any }>(`/orders/${id}/confirm`, data),
 };
 
 export const eventsApi = {
+  getAll: (params?: { 
+    page?: number; 
+    limit?: number; 
+    category?: string; 
+    city?: string; 
+    search?: string;
+    dateFrom?: string;
+    dateTo?: string;
+  }) => {
+    const query = new URLSearchParams();
+    if (params) {
+      Object.entries(params).forEach(([key, value]) => {
+        if (value !== undefined) query.append(key, String(value));
+      });
+    }
+    return api.get<{ success: boolean; data: any }>(`/events?${query.toString()}`);
+  },
+  
   list: (params?: { 
     page?: number; 
     limit?: number; 
@@ -266,6 +348,61 @@ export const adminApi = {
   
   assignEventToVendedor: (data: { vendedorId: string; eventId: string; ticketLimit?: number }) =>
     api.post<{ success: boolean; data: any }>('/vendedores/assign-event', data),
+  
+  getTrackingConfig: () =>
+    api.get<{ success: boolean; data: { metaPixelId: string | null; googleAdsId: string | null } }>('/admin/tracking-config'),
+  
+  updateTrackingConfig: (data: { metaPixelId?: string; googleAdsId?: string }) =>
+    api.put<{ success: boolean; data: { metaPixelId: string | null; googleAdsId: string | null } }>('/admin/tracking-config', data),
+};
+
+export const trackingApi = {
+  getMetaPixelMetrics: (eventId: string, params?: { startDate?: string; endDate?: string; accessToken?: string }) => {
+    const query = new URLSearchParams();
+    if (params) {
+      Object.entries(params).forEach(([key, value]) => {
+        if (value !== undefined) query.append(key, String(value));
+      });
+    }
+    return api.get<{ success: boolean; data: any }>(`/tracking/meta-pixel/${eventId}?${query.toString()}`);
+  },
+  
+  getGoogleAdsMetrics: (eventId: string, params?: { startDate?: string; endDate?: string; customerId?: string; refreshToken?: string; clientId?: string; clientSecret?: string }) => {
+    const query = new URLSearchParams();
+    if (params) {
+      Object.entries(params).forEach(([key, value]) => {
+        if (value !== undefined) query.append(key, String(value));
+      });
+    }
+    return api.get<{ success: boolean; data: any }>(`/tracking/google-ads/${eventId}?${query.toString()}`);
+  },
+  
+  getAllMetrics: (params?: { startDate?: string; endDate?: string }) => {
+    const query = new URLSearchParams();
+    if (params) {
+      Object.entries(params).forEach(([key, value]) => {
+        if (value !== undefined) query.append(key, String(value));
+      });
+    }
+    return api.get<{ success: boolean; data: any }>(`/tracking/all?${query.toString()}`);
+  },
+};
+
+export const favoriteApi = {
+  add: (eventId: string) => 
+    api.post<{ success: boolean }>(`/favorites/${eventId}`),
+  
+  remove: (eventId: string) => 
+    api.delete<{ success: boolean }>(`/favorites/${eventId}`),
+  
+  getAll: () =>
+    api.get<{ success: boolean; data: any[] }>('/favorites'),
+  
+  getFavorites: () => 
+    api.get<{ success: boolean; data: any[] }>('/favorites'),
+  
+  checkFavorite: (eventId: string) => 
+    api.get<{ success: boolean; data: { isFavorite: boolean } }>(`/favorites/${eventId}/check`),
 };
 
 export const ticketsApi = {
@@ -313,6 +450,26 @@ export const ticketsApi = {
     api.post<{ success: boolean }>(`/tickets/${id}/resend-email`),
 };
 
+export const transferApi = {
+  // Transferir entrada por email
+  transfer: (data: { ticketId: string; toEmail: string; method: 'EMAIL' }) =>
+    api.post<{ success: boolean; data: any; message: string }>('/transfers', data),
+  
+  // Transferir entrada escaneando QR personal del receptor
+  transferByQR: (data: { ticketId: string; personalQRCode: string }) =>
+    api.post<{ success: boolean; data: any; message: string }>('/transfers/by-qr', data),
+  
+  // Obtener historial de transferencias
+  getHistory: () =>
+    api.get<{ success: boolean; data: { sent: any[]; received: any[] } }>('/transfers/history'),
+  
+  accept: (transferId: string) =>
+    api.post<{ success: boolean }>(`/transfers/${transferId}/accept`),
+  
+  reject: (transferId: string) =>
+    api.post<{ success: boolean }>(`/transfers/${transferId}/reject`),
+};
+
 export const paymentPlacesApi = {
   getNearbyPlaces: (params: { city: string; address?: string; latitude?: number; longitude?: number }) => {
     const query = new URLSearchParams();
@@ -327,37 +484,9 @@ export const paymentPlacesApi = {
     api.get<{ success: boolean; data: any }>('/payment-places/bank-account'),
 };
 
-export const transferApi = {
-  // Transferir entrada por email
-  transfer: (data: { ticketId: string; toEmail: string; method: 'EMAIL' }) =>
-    api.post<{ success: boolean; data: any; message: string }>('/transfers', data),
-  
-  // Transferir entrada escaneando QR personal del receptor
-  transferByQR: (data: { ticketId: string; personalQRCode: string }) =>
-    api.post<{ success: boolean; data: any; message: string }>('/transfers/by-qr', data),
-  
-  // Obtener historial de transferencias
-  getHistory: () =>
-    api.get<{ success: boolean; data: { sent: any[]; received: any[] } }>('/transfers/history'),
-};
-
-export const userApi = {
-  // Obtener QR personal del usuario
-  getPersonalQR: () =>
-    api.get<{ success: boolean; data: { qrCode: string; qrHash: string } }>('/auth/personal-qr'),
-  
-  // Obtener imagen del QR personal
-  getPersonalQRImage: () => {
-    const token = localStorage.getItem('token');
-    return fetch(`${API_URL}/auth/personal-qr/image`, {
-      headers: {
-        'Authorization': `Bearer ${token}`,
-      },
-    }).then(res => {
-      if (!res.ok) throw new Error('Error al obtener QR personal');
-      return res.blob();
-    });
-  },
+export const healthApi = {
+  check: () =>
+    api.get<{ success: boolean; data: any }>('/health'),
 };
 
 export const uploadApi = {
@@ -379,16 +508,31 @@ export const uploadApi = {
   },
 };
 
-export const favoriteApi = {
-  add: (eventId: string) => api.post<{ success: boolean }>(`/favorites/${eventId}`),
-  remove: (eventId: string) => api.delete<{ success: boolean }>(`/favorites/${eventId}`),
-  getFavorites: () => api.get<{ success: boolean; data: any[] }>('/favorites'),
-  checkFavorite: (eventId: string) => api.get<{ success: boolean; data: { isFavorite: boolean } }>(`/favorites/${eventId}/check`),
+export const validationApi = {
+  validate: (data: { qrCode: string; eventId?: string }) =>
+    api.post<{ success: boolean; data: any }>('/validation/scan', data),
+  
+  getValidations: (eventId: string) =>
+    api.get<{ success: boolean; data: any[] }>(`/validation/event/${eventId}`),
 };
 
-export const paymentApi = {
-  createMercadoPagoPreference: (data: { orderId: string; payerEmail: string; payerName: string; payerDni: string; tickets?: Array<{ ticketTypeId: string; quantity: number }> }) =>
-    api.post<{ success: boolean; data: { id: string; init_point: string; sandbox_init_point: string; client_id: string } }>('/payments/mercadopago/create-preference', data),
+export const userApi = {
+  // Obtener QR personal del usuario
+  getPersonalQR: () =>
+    api.get<{ success: boolean; data: { qrCode: string; qrHash: string } }>('/auth/personal-qr'),
+  
+  // Obtener imagen del QR personal
+  getPersonalQRImage: () => {
+    const token = localStorage.getItem('token');
+    return fetch(`${API_URL}/auth/personal-qr/image`, {
+      headers: {
+        'Authorization': `Bearer ${token}`,
+      },
+    }).then(res => {
+      if (!res.ok) throw new Error('Error al obtener QR personal');
+      return res.blob();
+    });
+  },
 };
 
 export const vendedorApi = {
@@ -404,6 +548,11 @@ export const vendedorApi = {
     api.put<{ success: boolean; data: any }>('/vendedores/referidos/code', { referidoId, customCode }),
   updateAllReferidoCodes: (customCode: string) =>
     api.put<{ success: boolean; data: any }>('/vendedores/referidos/all-codes', { customCode }),
+};
+
+export const paymentApi = {
+  createMercadoPagoPreference: (data: { orderId: string; payerEmail: string; payerName: string; payerDni: string; tickets?: Array<{ ticketTypeId: string; quantity: number }> }) =>
+    api.post<{ success: boolean; data: { id: string; init_point: string; sandbox_init_point: string; client_id: string } }>('/payments/mercadopago/create-preference', data),
 };
 
 export const porteroApi = {

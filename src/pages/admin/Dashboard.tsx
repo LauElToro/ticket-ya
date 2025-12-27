@@ -1,19 +1,70 @@
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
 import { adminApi } from '@/lib/api';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Calendar, Users, Ticket, DollarSign } from 'lucide-react';
+import { Calendar, Users, Ticket, DollarSign, BarChart3, Settings, CheckCircle2, Facebook, ExternalLink, Info } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { useNavigate } from 'react-router-dom';
 import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import { useState, useEffect } from 'react';
+import { toast } from '@/hooks/use-toast';
 
 const Dashboard = () => {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const { data, isLoading } = useQuery({
     queryKey: ['admin-dashboard'],
     queryFn: () => adminApi.getDashboard(),
   });
+
+  const { data: trackingConfig, isLoading: isLoadingTracking } = useQuery({
+    queryKey: ['tracking-config'],
+    queryFn: () => adminApi.getTrackingConfig(),
+  });
+
+  const [trackingData, setTrackingData] = useState({
+    metaPixelId: trackingConfig?.data?.metaPixelId || '',
+    googleAdsId: trackingConfig?.data?.googleAdsId || '',
+  });
+
+  // Actualizar estado cuando se carga la configuración
+  useEffect(() => {
+    if (trackingConfig?.data) {
+      setTrackingData({
+        metaPixelId: trackingConfig.data.metaPixelId || '',
+        googleAdsId: trackingConfig.data.googleAdsId || '',
+      });
+    }
+  }, [trackingConfig]);
+
+  const updateTrackingMutation = useMutation({
+    mutationFn: (data: { metaPixelId?: string; googleAdsId?: string }) => adminApi.updateTrackingConfig(data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['tracking-config'] });
+      toast({
+        title: 'Configuración actualizada',
+        description: 'La configuración de tracking se ha guardado correctamente',
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: 'Error',
+        description: error.message || 'No se pudo actualizar la configuración',
+        variant: 'destructive',
+      });
+    },
+  });
+
+  const handleTrackingSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    updateTrackingMutation.mutate({
+      metaPixelId: trackingData.metaPixelId || undefined,
+      googleAdsId: trackingData.googleAdsId || undefined,
+    });
+  };
 
   const dashboard = data?.data;
 
@@ -114,6 +165,100 @@ const Dashboard = () => {
             </Card>
           </div>
 
+          {/* Configuración de Tracking */}
+          <Card className="mb-6 sm:mb-8 border-2 shadow-xl bg-gradient-to-br from-card to-card/50 backdrop-blur-sm">
+            <CardHeader className="pb-3 sm:pb-4">
+              <CardTitle className="text-xl sm:text-2xl flex items-center gap-2 sm:gap-3">
+                <div className="p-1.5 sm:p-2 rounded-lg bg-gradient-to-br from-orange-100 to-orange-50 dark:from-orange-900/30 dark:to-orange-900/20 flex-shrink-0">
+                  <BarChart3 className="w-5 h-5 sm:w-6 sm:h-6 text-orange-600 dark:text-orange-400" />
+                </div>
+                <span className="break-words">Configuración de Tracking</span>
+              </CardTitle>
+              <CardDescription className="text-sm sm:text-base">
+                Configura tus códigos de seguimiento una vez y se aplicarán automáticamente a todos tus eventos
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <form onSubmit={handleTrackingSubmit} className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="metaPixelId" className="text-sm font-semibold flex items-center gap-2 mb-2">
+                      <Facebook className="w-4 h-4" />
+                      Meta Pixel ID
+                      {trackingData.metaPixelId && (
+                        <CheckCircle2 className="w-4 h-4 text-green-500" />
+                      )}
+                    </Label>
+                    <Input
+                      id="metaPixelId"
+                      value={trackingData.metaPixelId}
+                      onChange={(e) => setTrackingData({ ...trackingData, metaPixelId: e.target.value })}
+                      placeholder="Ej: 123456789012345"
+                      className="h-10"
+                      disabled={updateTrackingMutation.isPending || isLoadingTracking}
+                    />
+                    <p className="text-xs text-muted-foreground mt-1">
+                      ID de tu Meta Pixel para tracking de conversiones
+                    </p>
+                    <a
+                      href="https://business.facebook.com/events_manager2"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-xs text-primary hover:underline mt-1 inline-flex items-center gap-1"
+                    >
+                      ¿Cómo obtenerlo?
+                      <ExternalLink className="w-3 h-3" />
+                    </a>
+                  </div>
+                  <div>
+                    <Label htmlFor="googleAdsId" className="text-sm font-semibold flex items-center gap-2 mb-2">
+                      <BarChart3 className="w-4 h-4" />
+                      Google Ads ID
+                      {trackingData.googleAdsId && (
+                        <CheckCircle2 className="w-4 h-4 text-green-500" />
+                      )}
+                    </Label>
+                    <Input
+                      id="googleAdsId"
+                      value={trackingData.googleAdsId}
+                      onChange={(e) => setTrackingData({ ...trackingData, googleAdsId: e.target.value })}
+                      placeholder="Ej: AW-123456789"
+                      className="h-10"
+                      disabled={updateTrackingMutation.isPending || isLoadingTracking}
+                    />
+                    <p className="text-xs text-muted-foreground mt-1">
+                      ID de conversión de Google Ads
+                    </p>
+                    <a
+                      href="https://ads.google.com"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-xs text-primary hover:underline mt-1 inline-flex items-center gap-1"
+                    >
+                      ¿Cómo obtenerlo?
+                      <ExternalLink className="w-3 h-3" />
+                    </a>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
+                  <Info className="w-5 h-5 text-blue-600 dark:text-blue-400 flex-shrink-0" />
+                  <p className="text-sm text-blue-800 dark:text-blue-200">
+                    Esta configuración se aplicará automáticamente a todos tus eventos. No necesitas configurarla en cada evento individual.
+                  </p>
+                </div>
+                <div className="flex justify-end">
+                  <Button
+                    type="submit"
+                    disabled={updateTrackingMutation.isPending || isLoadingTracking}
+                    className="bg-gradient-to-r from-secondary to-secondary/90 hover:from-secondary/90 hover:to-secondary"
+                  >
+                    {updateTrackingMutation.isPending ? 'Guardando...' : 'Guardar Configuración'}
+                  </Button>
+                </div>
+              </form>
+            </CardContent>
+          </Card>
+
           {/* Acciones rápidas - Mejorado */}
           <Card className="mb-6 sm:mb-8 border-2 shadow-xl bg-gradient-to-br from-card to-card/50 backdrop-blur-sm">
             <CardHeader className="pb-3 sm:pb-4">
@@ -149,6 +294,18 @@ const Dashboard = () => {
                   </div>
                   <span className="font-bold text-base sm:text-lg break-words text-center">Ver Eventos</span>
                   <span className="text-xs opacity-70 hidden sm:inline">Gestionar eventos</span>
+                </Button>
+                <Button 
+                  variant="outline" 
+                  onClick={() => navigate('/admin/tracking')}
+                  className="h-auto py-6 sm:py-8 flex flex-col items-center gap-2 sm:gap-3 border-2 hover:border-secondary hover:bg-secondary/5 transition-all duration-300 transform hover:scale-105 shadow-md hover:shadow-lg"
+                  size="lg"
+                >
+                  <div className="p-2 sm:p-3 rounded-full bg-secondary/10">
+                    <BarChart3 className="w-5 h-5 sm:w-6 sm:h-6 md:w-7 md:h-7 text-secondary" />
+                  </div>
+                  <span className="font-bold text-base sm:text-lg break-words text-center">Tracking</span>
+                  <span className="text-xs opacity-70 hidden sm:inline">Meta Pixel & Google Ads</span>
                 </Button>
                 <Button 
                   variant="outline" 
