@@ -26,6 +26,7 @@ import UsersList from "./pages/admin/UsersList";
 import Tracking from "./pages/admin/Tracking";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
+import CompleteRegistration from "./pages/CompleteRegistration";
 import NotFound from "./pages/NotFound";
 import VendedorDashboard from "./pages/vendedor/Dashboard";
 import PorteroScan from "./pages/portero/Scan";
@@ -60,6 +61,7 @@ const App = () => (
             <Route path="/como-funciona" element={<ComoFunciona />} />
             <Route path="/ayuda" element={<Ayuda />} />
             <Route path="/favoritos" element={<Favoritos />} />
+            <Route path="/complete-registration" element={<CompleteRegistration />} />
             
             {/* Admin routes */}
             <Route

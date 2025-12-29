@@ -3,10 +3,11 @@ import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
 import { adminApi } from '@/lib/api';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Calendar, Users, Ticket, DollarSign, BarChart3, Settings, CheckCircle2, Facebook, ExternalLink, Info } from 'lucide-react';
+import { Calendar, Users, Ticket, DollarSign, BarChart3, Settings, CheckCircle2, Facebook, ExternalLink, Info, Gift, Mail, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 import { useNavigate } from 'react-router-dom';
 import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { useState, useEffect } from 'react';
@@ -25,10 +26,26 @@ const Dashboard = () => {
     queryFn: () => adminApi.getTrackingConfig(),
   });
 
+  const { data: eventsData } = useQuery({
+    queryKey: ['admin-events-for-gift'],
+    queryFn: () => adminApi.getEvents({ isActive: 'true', limit: 100 }),
+  });
+
   const [trackingData, setTrackingData] = useState({
     metaPixelId: trackingConfig?.data?.metaPixelId || '',
     googleAdsId: trackingConfig?.data?.googleAdsId || '',
   });
+
+  const [giftFormData, setGiftFormData] = useState({
+    eventId: '',
+    ticketTypeId: '',
+    quantity: '1',
+    recipientEmail: '',
+    recipientName: '',
+    message: '',
+  });
+
+  const [showGiftForm, setShowGiftForm] = useState(false);
 
   // Actualizar estado cuando se carga la configuración
   useEffect(() => {
@@ -65,6 +82,90 @@ const Dashboard = () => {
       googleAdsId: trackingData.googleAdsId || undefined,
     });
   };
+
+  const giftTicketsMutation = useMutation({
+    mutationFn: (data: any) => adminApi.giftTicketsByEmail(data),
+    onSuccess: (response) => {
+      const registrationLink = response.data.registrationLink;
+      if (registrationLink) {
+        toast({
+          title: '✅ Entradas regaladas exitosamente',
+          description: (
+            <div className="space-y-2">
+              <p>{response.data.message}</p>
+              <div className="mt-2 p-2 bg-blue-50 dark:bg-blue-900/20 rounded border border-blue-200 dark:border-blue-800">
+                <p className="text-sm font-semibold mb-1">Link de registro para el destinatario:</p>
+                <div className="flex items-center gap-2">
+                  <Input
+                    value={registrationLink}
+                    readOnly
+                    className="h-8 text-xs"
+                    onClick={(e) => (e.target as HTMLInputElement).select()}
+                  />
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => {
+                      navigator.clipboard.writeText(registrationLink);
+                      toast({ title: 'Link copiado al portapapeles' });
+                    }}
+                  >
+                    Copiar
+                  </Button>
+                </div>
+              </div>
+            </div>
+          ),
+          duration: 10000,
+        });
+      } else {
+        toast({
+          title: '✅ Entradas regaladas exitosamente',
+          description: response.data.message,
+        });
+      }
+      setGiftFormData({
+        eventId: '',
+        ticketTypeId: '',
+        quantity: '1',
+        recipientEmail: '',
+        recipientName: '',
+        message: '',
+      });
+      setShowGiftForm(false);
+      queryClient.invalidateQueries({ queryKey: ['admin-dashboard'] });
+    },
+    onError: (error: any) => {
+      toast({
+        title: '❌ Error al regalar entradas',
+        description: error.message || 'No se pudieron regalar las entradas',
+        variant: 'destructive',
+      });
+    },
+  });
+
+  const handleGiftSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!giftFormData.eventId || !giftFormData.ticketTypeId || !giftFormData.recipientEmail) {
+      toast({
+        title: 'Error de validación',
+        description: 'Por favor completa todos los campos requeridos',
+        variant: 'destructive',
+      });
+      return;
+    }
+    giftTicketsMutation.mutate({
+      eventId: giftFormData.eventId,
+      ticketTypeId: giftFormData.ticketTypeId,
+      quantity: parseInt(giftFormData.quantity),
+      recipientEmail: giftFormData.recipientEmail,
+      recipientName: giftFormData.recipientName || undefined,
+      message: giftFormData.message || undefined,
+    });
+  };
+
+  const selectedEvent = eventsData?.data?.events?.find((e: any) => e.id === giftFormData.eventId);
+  const availableTicketTypes = selectedEvent?.ticketTypes || [];
 
   const dashboard = data?.data;
 
@@ -256,6 +357,193 @@ const Dashboard = () => {
                   </Button>
                 </div>
               </form>
+            </CardContent>
+          </Card>
+
+          {/* Regalar Entradas */}
+          <Card className="mb-6 sm:mb-8 border-2 shadow-xl bg-gradient-to-br from-card to-card/50 backdrop-blur-sm">
+            <CardHeader className="pb-3 sm:pb-4">
+              <CardTitle className="text-xl sm:text-2xl flex items-center gap-2 sm:gap-3">
+                <div className="p-1.5 sm:p-2 rounded-lg bg-gradient-to-br from-pink-100 to-pink-50 dark:from-pink-900/30 dark:to-pink-900/20 flex-shrink-0">
+                  <Gift className="w-5 h-5 sm:w-6 sm:h-6 text-pink-600 dark:text-pink-400" />
+                </div>
+                <span className="break-words">Regalar Entradas</span>
+              </CardTitle>
+              <CardDescription className="text-sm sm:text-base">
+                Regala entradas por email. Si el destinatario no está registrado, se creará automáticamente.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {!showGiftForm ? (
+                <div className="text-center py-8">
+                  <Gift className="w-16 h-16 mx-auto mb-4 text-pink-500 opacity-50" />
+                  <p className="text-muted-foreground mb-4">
+                    Regala entradas a tus invitados por email
+                  </p>
+                  <Button
+                    onClick={() => setShowGiftForm(true)}
+                    className="bg-gradient-to-r from-pink-500 to-pink-600 hover:from-pink-600 hover:to-pink-700"
+                  >
+                    <Gift className="w-4 h-4 mr-2" />
+                    Regalar Entradas
+                  </Button>
+                </div>
+              ) : (
+                <form onSubmit={handleGiftSubmit} className="space-y-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <Label htmlFor="gift-event" className="text-sm font-semibold mb-2 block">
+                        Evento *
+                      </Label>
+                      <select
+                        id="gift-event"
+                        value={giftFormData.eventId}
+                        onChange={(e) => {
+                          setGiftFormData({
+                            ...giftFormData,
+                            eventId: e.target.value,
+                            ticketTypeId: '',
+                          });
+                        }}
+                        className="w-full h-10 rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                        required
+                      >
+                        <option value="">Seleccionar evento</option>
+                        {eventsData?.data?.events?.map((event: any) => (
+                          <option key={event.id} value={event.id}>
+                            {event.title}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div>
+                      <Label htmlFor="gift-ticket-type" className="text-sm font-semibold mb-2 block">
+                        Tipo de Entrada *
+                      </Label>
+                      <select
+                        id="gift-ticket-type"
+                        value={giftFormData.ticketTypeId}
+                        onChange={(e) => setGiftFormData({ ...giftFormData, ticketTypeId: e.target.value })}
+                        className="w-full h-10 rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                        required
+                        disabled={!giftFormData.eventId}
+                      >
+                        <option value="">Seleccionar tipo de entrada</option>
+                        {availableTicketTypes.map((tt: any) => (
+                          <option key={tt.id} value={tt.id}>
+                            {tt.name} (Disponibles: {tt.availableQty})
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div>
+                      <Label htmlFor="gift-quantity" className="text-sm font-semibold mb-2 block">
+                        Cantidad *
+                      </Label>
+                      <Input
+                        id="gift-quantity"
+                        type="number"
+                        min="1"
+                        value={giftFormData.quantity}
+                        onChange={(e) => setGiftFormData({ ...giftFormData, quantity: e.target.value })}
+                        className="h-10"
+                        required
+                      />
+                    </div>
+
+                    <div>
+                      <Label htmlFor="gift-email" className="text-sm font-semibold mb-2 block flex items-center gap-2">
+                        <Mail className="w-4 h-4" />
+                        Email del Destinatario *
+                      </Label>
+                      <Input
+                        id="gift-email"
+                        type="email"
+                        value={giftFormData.recipientEmail}
+                        onChange={(e) => setGiftFormData({ ...giftFormData, recipientEmail: e.target.value })}
+                        placeholder="ejemplo@email.com"
+                        className="h-10"
+                        required
+                      />
+                    </div>
+
+                    <div>
+                      <Label htmlFor="gift-name" className="text-sm font-semibold mb-2 block">
+                        Nombre del Destinatario (opcional)
+                      </Label>
+                      <Input
+                        id="gift-name"
+                        type="text"
+                        value={giftFormData.recipientName}
+                        onChange={(e) => setGiftFormData({ ...giftFormData, recipientName: e.target.value })}
+                        placeholder="Nombre completo"
+                        className="h-10"
+                      />
+                    </div>
+
+                    <div>
+                      <Label htmlFor="gift-message" className="text-sm font-semibold mb-2 block">
+                        Mensaje Personalizado (opcional)
+                      </Label>
+                      <Textarea
+                        id="gift-message"
+                        value={giftFormData.message}
+                        onChange={(e) => setGiftFormData({ ...giftFormData, message: e.target.value })}
+                        placeholder="Mensaje que recibirá el destinatario..."
+                        className="min-h-[80px]"
+                        rows={3}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-2 p-3 bg-pink-50 dark:bg-pink-900/20 rounded-lg border border-pink-200 dark:border-pink-800">
+                    <Info className="w-5 h-5 text-pink-600 dark:text-pink-400 flex-shrink-0" />
+                    <p className="text-sm text-pink-800 dark:text-pink-200">
+                      Si el destinatario no está registrado, se creará una cuenta automáticamente. Una vez registrado, verá sus entradas en "Mis Entradas".
+                    </p>
+                  </div>
+
+                  <div className="flex justify-end gap-2">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => {
+                        setShowGiftForm(false);
+                        setGiftFormData({
+                          eventId: '',
+                          ticketTypeId: '',
+                          quantity: '1',
+                          recipientEmail: '',
+                          recipientName: '',
+                          message: '',
+                        });
+                      }}
+                      disabled={giftTicketsMutation.isPending}
+                    >
+                      Cancelar
+                    </Button>
+                    <Button
+                      type="submit"
+                      disabled={giftTicketsMutation.isPending}
+                      className="bg-gradient-to-r from-pink-500 to-pink-600 hover:from-pink-600 hover:to-pink-700"
+                    >
+                      {giftTicketsMutation.isPending ? (
+                        <>
+                          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                          Regalando...
+                        </>
+                      ) : (
+                        <>
+                          <Gift className="w-4 h-4 mr-2" />
+                          Regalar Entradas
+                        </>
+                      )}
+                    </Button>
+                  </div>
+                </form>
+              )}
             </CardContent>
           </Card>
 

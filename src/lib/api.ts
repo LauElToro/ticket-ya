@@ -165,6 +165,8 @@ export const api = new ApiClient(API_URL);
 
 // Servicios de API
 export const authApi = {
+  completeGiftRegistration: (token: string, data: { password: string; dni: string; phone: string; name?: string }) =>
+    api.post<{ success: boolean; data: any }>('/auth/complete-gift-registration', { token, ...data }),
   register: (data: { email: string; password: string; name: string; dni: string; phone?: string }) =>
     api.post<{ success: boolean; data: any }>('/auth/register', data),
   
@@ -345,6 +347,16 @@ export const adminApi = {
     const query = assignedBy ? `?assignedBy=${assignedBy}` : '';
     return api.get<{ success: boolean; data: any }>(`/admin/porteros${query}`);
   },
+  
+  giftTicketsByEmail: (data: {
+    eventId: string;
+    ticketTypeId: string;
+    quantity: number;
+    recipientEmail: string;
+    recipientName?: string;
+    message?: string;
+  }) =>
+    api.post<{ success: boolean; data: any }>('/admin/tickets/gift', data),
   
   assignEventToVendedor: (data: { vendedorId: string; eventId: string; ticketLimit?: number }) =>
     api.post<{ success: boolean; data: any }>('/vendedores/assign-event', data),

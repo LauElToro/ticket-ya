@@ -32,11 +32,42 @@ interface TicketType {
   totalQty: string; // Cantidad total (suma de todas las tandas)
 }
 
+// Función helper para generar horas en intervalos de 5 minutos
+const generateTimeOptions = () => {
+  const times = [];
+  for (let hour = 0; hour < 24; hour++) {
+    for (let minute = 0; minute < 60; minute += 5) {
+      const timeString = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
+      times.push(timeString);
+    }
+  }
+  return times;
+};
+
+// Función helper para obtener la fecha mínima (hoy)
+const getMinDate = () => {
+  const today = new Date();
+  return today.toISOString().split('T')[0];
+};
+
+// Función helper para redondear hora a intervalo de 5 minutos
+const roundToNearest5Minutes = (time: string): string => {
+  if (!time) return '';
+  const [hours, minutes] = time.split(':').map(Number);
+  const roundedMinutes = Math.round(minutes / 5) * 5;
+  if (roundedMinutes >= 60) {
+    return `${(hours + 1).toString().padStart(2, '0')}:00`;
+  }
+  return `${hours.toString().padStart(2, '0')}:${roundedMinutes.toString().padStart(2, '0')}`;
+};
+
 const EventForm = () => {
   const navigate = useNavigate();
   const { id } = useParams();
   const queryClient = useQueryClient();
   const isEdit = !!id;
+  
+  const timeOptions = generateTimeOptions();
 
   const [formData, setFormData] = useState({
     title: '',
@@ -205,6 +236,7 @@ const EventForm = () => {
           const selectedDate = new Date(value);
           const today = new Date();
           today.setHours(0, 0, 0, 0);
+          selectedDate.setHours(0, 0, 0, 0);
           if (selectedDate < today) {
             newErrors.date = 'La fecha no puede ser anterior a hoy';
           } else {
@@ -772,61 +804,88 @@ const EventForm = () => {
                 </CardHeader>
                 <CardContent className="space-y-5">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                    <div>
+                    <div className="space-y-2">
                       <Label htmlFor="date" className="text-base font-semibold flex items-center gap-2">
-                        <Calendar className="w-4 h-4" />
-                        Fecha *
+                        <div className="p-1.5 rounded-md bg-blue-100 dark:bg-blue-900/30">
+                          <Calendar className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+                        </div>
+                        Fecha del Evento *
                         {formData.date && !errors.date && (
-                          <CheckCircle2 className="w-4 h-4 text-green-500" />
+                          <CheckCircle2 className="w-4 h-4 text-green-500 ml-auto" />
                         )}
                       </Label>
-                      <Input
-                        id="date"
-                        type="date"
-                        value={formData.date}
-                        onChange={(e) => {
-                          setFormData({ ...formData, date: e.target.value });
-                          validateField('date', e.target.value);
-                        }}
-                        onBlur={(e) => validateField('date', e.target.value)}
-                        min={new Date().toISOString().split('T')[0]}
-                        className={`mt-2 h-11 ${errors.date ? 'border-destructive' : ''}`}
-                        required
-                        disabled={mutation.isPending}
-                      />
+                      <div className="relative">
+                        <Input
+                          id="date"
+                          type="date"
+                          value={formData.date}
+                          onChange={(e) => {
+                            setFormData({ ...formData, date: e.target.value });
+                            validateField('date', e.target.value);
+                          }}
+                          onBlur={(e) => validateField('date', e.target.value)}
+                          min={getMinDate()}
+                          className={`h-11 pl-4 pr-4 text-base ${errors.date ? 'border-destructive focus-visible:ring-destructive' : 'border-input focus-visible:ring-blue-500'}`}
+                          required
+                          disabled={mutation.isPending}
+                        />
+                      </div>
                       {errors.date && (
                         <p className="text-sm text-destructive mt-1 flex items-center gap-1">
                           <AlertCircle className="w-3 h-3" />
                           {errors.date}
                         </p>
                       )}
+                      {formData.date && !errors.date && (
+                        <p className="text-xs text-muted-foreground flex items-center gap-1">
+                          <Info className="w-3 h-3" />
+                          Solo se permiten fechas desde hoy en adelante
+                        </p>
+                      )}
                     </div>
 
-                    <div>
+                    <div className="space-y-2">
                       <Label htmlFor="time" className="text-base font-semibold flex items-center gap-2">
-                        <Clock className="w-4 h-4" />
-                        Hora *
+                        <div className="p-1.5 rounded-md bg-purple-100 dark:bg-purple-900/30">
+                          <Clock className="w-4 h-4 text-purple-600 dark:text-purple-400" />
+                        </div>
+                        Hora del Evento *
                         {formData.time && !errors.time && (
-                          <CheckCircle2 className="w-4 h-4 text-green-500" />
+                          <CheckCircle2 className="w-4 h-4 text-green-500 ml-auto" />
                         )}
                       </Label>
-                      <Input
-                        id="time"
-                        type="time"
-                        value={formData.time}
-                        onChange={(e) => {
-                          setFormData({ ...formData, time: e.target.value });
-                          validateField('time', e.target.value);
-                        }}
-                        onBlur={(e) => validateField('time', e.target.value)}
-                        className={`mt-2 h-11 ${errors.time ? 'border-destructive' : ''}`}
-                        required
-                        disabled={mutation.isPending}
-                      />
+                      <div className="relative">
+                        <select
+                          id="time"
+                          value={formData.time}
+                          onChange={(e) => {
+                            const roundedTime = roundToNearest5Minutes(e.target.value);
+                            setFormData({ ...formData, time: roundedTime });
+                            validateField('time', roundedTime);
+                          }}
+                          onBlur={(e) => validateField('time', e.target.value)}
+                          className={`h-11 w-full rounded-md border bg-background px-4 py-2 text-base ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 appearance-none bg-[url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23666' d='M6 9L1 4h10z'/%3E%3C/svg%3E")] bg-[length:12px] bg-[right_12px_center] bg-no-repeat pr-10 ${errors.time ? 'border-destructive focus-visible:ring-destructive' : 'border-input focus-visible:ring-purple-500'}`}
+                          required
+                          disabled={mutation.isPending}
+                        >
+                          <option value="">Seleccionar hora</option>
+                          {timeOptions.map((time) => (
+                            <option key={time} value={time}>
+                              {time}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
                       {errors.time && (
                         <p className="text-sm text-destructive mt-1 flex items-center gap-1">
                           <AlertCircle className="w-3 h-3" />
                           {errors.time}
+                        </p>
+                      )}
+                      {formData.time && !errors.time && (
+                        <p className="text-xs text-muted-foreground flex items-center gap-1">
+                          <Info className="w-3 h-3" />
+                          Horarios disponibles en intervalos de 5 minutos
                         </p>
                       )}
                     </div>
@@ -1078,37 +1137,97 @@ const EventForm = () => {
                         </div>
                         
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-                          <div>
-                            <Label>Nombre</Label>
+                          <div className="space-y-2">
+                            <Label className="flex items-center gap-1.5 text-sm font-semibold">
+                              <Ticket className="w-3.5 h-3.5 text-blue-600" />
+                              Nombre de la Tanda
+                            </Label>
                             <Input
                               value={tanda.name}
                               onChange={(e) => updateTanda(tandaIndex, 'name', e.target.value)}
-                              placeholder="Tanda 1"
-                              className="mt-1 h-10"
+                              placeholder="Ej: Tanda 1 - Preventa"
+                              className="h-10 text-sm"
                               disabled={mutation.isPending}
                             />
                           </div>
-                          <div>
-                            <Label>Fecha Inicio *</Label>
+                          <div className="space-y-2">
+                            <Label className="flex items-center gap-1.5 text-sm font-semibold">
+                              <div className="p-1 rounded bg-green-100 dark:bg-green-900/30">
+                                <Calendar className="w-3 h-3 text-green-600 dark:text-green-400" />
+                              </div>
+                              Fecha Inicio *
+                            </Label>
                             <Input
                               type="date"
                               value={tanda.startDate}
-                              onChange={(e) => updateTanda(tandaIndex, 'startDate', e.target.value)}
-                              className="mt-1 h-10"
+                              onChange={(e) => {
+                                const selectedDate = e.target.value;
+                                // Validar que no sea anterior a hoy
+                                if (selectedDate && selectedDate < getMinDate()) {
+                                  toast({
+                                    title: 'Fecha inválida',
+                                    description: 'La fecha no puede ser anterior a hoy',
+                                    variant: 'destructive',
+                                  });
+                                  return;
+                                }
+                                updateTanda(tandaIndex, 'startDate', selectedDate);
+                              }}
+                              min={getMinDate()}
+                              className="h-10 text-sm"
                               disabled={mutation.isPending}
                               required
                             />
+                            {tanda.startDate && tanda.startDate < getMinDate() && (
+                              <p className="text-xs text-destructive flex items-center gap-1">
+                                <AlertCircle className="w-3 h-3" />
+                                Fecha no puede ser anterior a hoy
+                              </p>
+                            )}
                           </div>
-                          <div>
-                            <Label>Fecha Fin *</Label>
+                          <div className="space-y-2">
+                            <Label className="flex items-center gap-1.5 text-sm font-semibold">
+                              <div className="p-1 rounded bg-red-100 dark:bg-red-900/30">
+                                <Calendar className="w-3 h-3 text-red-600 dark:text-red-400" />
+                              </div>
+                              Fecha Fin *
+                            </Label>
                             <Input
                               type="date"
                               value={tanda.endDate}
-                              onChange={(e) => updateTanda(tandaIndex, 'endDate', e.target.value)}
-                              className="mt-1 h-10"
+                              onChange={(e) => {
+                                const selectedDate = e.target.value;
+                                // Validar que no sea anterior a la fecha de inicio
+                                if (selectedDate && tanda.startDate && selectedDate < tanda.startDate) {
+                                  toast({
+                                    title: 'Fecha inválida',
+                                    description: 'La fecha de fin no puede ser anterior a la fecha de inicio',
+                                    variant: 'destructive',
+                                  });
+                                  return;
+                                }
+                                // Validar que no sea anterior a hoy
+                                if (selectedDate && selectedDate < getMinDate()) {
+                                  toast({
+                                    title: 'Fecha inválida',
+                                    description: 'La fecha no puede ser anterior a hoy',
+                                    variant: 'destructive',
+                                  });
+                                  return;
+                                }
+                                updateTanda(tandaIndex, 'endDate', selectedDate);
+                              }}
+                              min={tanda.startDate || getMinDate()}
+                              className="h-10 text-sm"
                               disabled={mutation.isPending}
                               required
                             />
+                            {tanda.endDate && tanda.startDate && tanda.endDate < tanda.startDate && (
+                              <p className="text-xs text-destructive flex items-center gap-1">
+                                <AlertCircle className="w-3 h-3" />
+                                Fecha fin debe ser posterior a fecha inicio
+                              </p>
+                            )}
                           </div>
                         </div>
 
