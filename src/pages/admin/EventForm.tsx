@@ -75,74 +75,82 @@ const EventForm = () => {
 
   // Cargar datos del evento cuando se reciben
   useEffect(() => {
-    if (eventData?.data && isEdit) {
-      const event = eventData.data;
-      console.log('Cargando evento para edición:', event);
-      
-      // Formatear fecha para el input date
-      let formattedDate = '';
-      if (event.date) {
-        try {
-          const eventDate = new Date(event.date);
-          if (!isNaN(eventDate.getTime())) {
-            formattedDate = eventDate.toISOString().split('T')[0];
-          }
-        } catch (e) {
-          console.error('Error formateando fecha:', e);
+    if (!eventData?.data || !isEdit) return;
+    
+    const event = eventData.data;
+    console.log('Cargando evento para edición:', event);
+    
+    // Formatear fecha para el input date
+    let formattedDate = '';
+    if (event.date) {
+      try {
+        const eventDate = new Date(event.date);
+        if (!isNaN(eventDate.getTime())) {
+          formattedDate = eventDate.toISOString().split('T')[0];
         }
-      }
-
-      setFormData({
-        title: event.title || '',
-        subtitle: event.subtitle || '',
-        description: event.description || '',
-        category: event.category || '',
-        date: formattedDate,
-        time: event.time || '',
-        venue: event.venue || '',
-        address: event.address || '',
-        city: event.city || '',
-        image: event.image || '',
-        latitude: event.latitude ? String(event.latitude) : '',
-        longitude: event.longitude ? String(event.longitude) : '',
-        isPublic: event.isPublic !== undefined ? event.isPublic : true,
-      });
-      
-      // Cargar tipos de entrada
-      if (event.ticketTypes && event.ticketTypes.length > 0) {
-        console.log('Cargando tipos de entrada:', event.ticketTypes);
-        setTicketTypes(
-          event.ticketTypes.map((tt: any) => ({
-            id: tt.id,
-            name: tt.name || '',
-            totalQty: String(tt.totalQty || 0),
-          }))
-        );
-      } else {
-        setTicketTypes([{ name: '', totalQty: '' }]);
-      }
-
-      // Cargar tandas
-      if (event.tandas && event.tandas.length > 0) {
-        console.log('Cargando tandas:', event.tandas);
-        setTandas(
-          event.tandas.map((tanda: any) => ({
-            id: tanda.id,
-            name: tanda.name || '',
-            startDate: tanda.startDate ? new Date(tanda.startDate).toISOString().split('T')[0] : '',
-            endDate: tanda.endDate ? new Date(tanda.endDate).toISOString().split('T')[0] : '',
-            ticketTypes: tanda.tandaTicketTypes?.map((ttt: any) => ({
-              name: ttt.ticketType.name,
-              price: String(ttt.price || 0),
-              quantity: String(ttt.quantity || 0),
-            })) || [],
-          }))
-        );
-      } else {
-        setTandas([]);
+      } catch (e) {
+        console.error('Error formateando fecha:', e);
       }
     }
-  }, [eventData, isEdit]);
+
+    setFormData({
+      title: event.title || '',
+      subtitle: event.subtitle || '',
+      description: event.description || '',
+      category: event.category || '',
+      date: formattedDate,
+      time: event.time || '',
+      venue: event.venue || '',
+      address: event.address || '',
+      city: event.city || '',
+      image: event.image || '',
+      latitude: event.latitude ? String(event.latitude) : '',
+      longitude: event.longitude ? String(event.longitude) : '',
+      isPublic: event.isPublic !== undefined ? event.isPublic : true,
+    });
+    
+    // Cargar tipos de entrada
+    if (event.ticketTypes && event.ticketTypes.length > 0) {
+      console.log('Cargando tipos de entrada:', event.ticketTypes);
+      setTicketTypes(
+        event.ticketTypes.map((tt: any) => ({
+          id: tt.id,
+          name: tt.name || '',
+          totalQty: String(tt.totalQty || 0),
+        }))
+      );
+    } else {
+      setTicketTypes([{ name: '', totalQty: '' }]);
+    }
+
+    // Cargar tandas
+    if (event.tandas && event.tandas.length > 0) {
+      console.log('Cargando tandas:', event.tandas);
+      const loadedTandas = event.tandas.map((tanda: any) => {
+        console.log('Procesando tanda:', tanda);
+        console.log('tandaTicketTypes:', tanda.tandaTicketTypes);
+        return {
+          id: tanda.id,
+          name: tanda.name || '',
+          startDate: tanda.startDate ? new Date(tanda.startDate).toISOString().split('T')[0] : '',
+          endDate: tanda.endDate ? new Date(tanda.endDate).toISOString().split('T')[0] : '',
+          ticketTypes: tanda.tandaTicketTypes?.map((ttt: any) => {
+            console.log('Procesando tandaTicketType:', ttt);
+            return {
+              name: ttt.ticketType?.name || '',
+              price: String(ttt.price || 0),
+              quantity: String(ttt.quantity || 0),
+            };
+          }) || [],
+        };
+      });
+      console.log('Tandas procesadas:', loadedTandas);
+      setTandas(loadedTandas);
+    } else {
+      console.log('No hay tandas para cargar');
+      setTandas([]);
+    }
+  }, [eventData?.data, isEdit]);
 
   // Mostrar error si hay problema cargando el evento
   useEffect(() => {
@@ -154,7 +162,7 @@ const EventForm = () => {
         variant: 'destructive',
       });
     }
-  }, [eventError, isEdit]);
+  }, [eventError, isEdit, toast]);
 
   const mutation = useMutation({
     mutationFn: (data: any) => (isEdit ? adminApi.updateEvent(id!, data) : adminApi.createEvent(data)),

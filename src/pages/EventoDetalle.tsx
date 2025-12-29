@@ -171,6 +171,16 @@ const EventoDetalle = () => {
     return Object.values(selectedTickets).reduce((a, b) => a + b, 0);
   }, [selectedTickets]);
 
+  const { trackViewContent } = useTrackEvent();
+  const event = eventResponse?.data;
+
+  // Trackear visualización del contenido
+  useEffect(() => {
+    if (event && event.metaPixelId) {
+      trackViewContent(event.metaPixelId, event.title, event.category);
+    }
+  }, [event?.id, event?.metaPixelId, event?.title, event?.category, trackViewContent]);
+
   const handleBuy = () => {
     if (!eventData) return;
     
@@ -251,27 +261,17 @@ const EventoDetalle = () => {
 
   const openGoogleMaps = () => {
     let url = '';
-    if (eventData.address) {
+    if (eventData?.address) {
       url = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${eventData.address}, ${eventData.city}`)}`;
-    } else if (eventData.latitude && eventData.longitude) {
+    } else if (eventData?.latitude && eventData?.longitude) {
       url = `https://www.google.com/maps/search/?api=1&query=${eventData.latitude},${eventData.longitude}`;
-    } else if (eventData.venue && eventData.city) {
+    } else if (eventData?.venue && eventData?.city) {
       url = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${eventData.venue}, ${eventData.city}`)}`;
     }
     if (url) {
       window.open(url, '_blank');
     }
   };
-
-  const event = eventResponse?.data;
-  const { trackViewContent } = useTrackEvent();
-
-  // Trackear visualización del contenido
-  useEffect(() => {
-    if (event && event.metaPixelId) {
-      trackViewContent(event.metaPixelId, event.title, event.category);
-    }
-  }, [event?.id, event?.metaPixelId]);
 
   return (
     <div className="min-h-screen bg-background">

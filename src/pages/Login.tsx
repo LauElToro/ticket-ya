@@ -89,9 +89,9 @@ const Login = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background flex flex-col">
       <Header />
-      <main className="pt-24 pb-16">
+      <main className="flex-1 pt-24 pb-16">
         <div className="container mx-auto px-4 max-w-md">
           <Card>
             <CardHeader>
@@ -149,4 +149,3 @@ const Login = () => {
 };
 
 export default Login;
-

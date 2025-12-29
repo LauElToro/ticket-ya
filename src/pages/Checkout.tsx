@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import Header from '@/components/layout/Header';
@@ -54,6 +54,17 @@ const Checkout = () => {
   const refCode = location.state?.refCode; // Código de referido
   const { trackInitiateCheckout, trackPurchase } = useTrackEvent();
 
+  // Calcular totalAmount antes de cualquier uso
+  const totalAmount = useMemo(() => {
+    if (!eventData || !selectedTickets || Object.keys(selectedTickets).length === 0) {
+      return 0;
+    }
+    return Object.entries(selectedTickets).reduce((total, [ticketId, qty]) => {
+      const ticket = eventData.tickets?.find((t: any) => String(t.id) === String(ticketId));
+      return total + (ticket?.price || 0) * (qty as number);
+    }, 0);
+  }, [eventData, selectedTickets]);
+
   // Obtener evento completo para tracking
   const { data: fullEventData } = useQuery({
     queryKey: ['event', eventData?.id],
@@ -71,18 +82,13 @@ const Checkout = () => {
     if (fullEventData && totalAmount > 0) {
       trackInitiateCheckout(fullEventData.metaPixelId, totalAmount, 'ARS');
     }
-  }, [fullEventData, totalAmount]);
+  }, [fullEventData, totalAmount, trackInitiateCheckout]);
 
   // Si no hay datos, redirigir a eventos
   if (!eventData || !selectedTickets || Object.keys(selectedTickets).length === 0) {
     navigate('/eventos');
     return null;
   }
-  
-  const totalAmount = Object.entries(selectedTickets).reduce((total, [ticketId, qty]) => {
-    const ticket = eventData.tickets?.find((t: any) => String(t.id) === String(ticketId));
-    return total + (ticket?.price || 0) * (qty as number);
-  }, 0);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
