@@ -98,6 +98,7 @@ const EventImagesCarousel = () => {
                 alt={`Evento ${index + 1}`}
                 className="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity duration-300"
                 loading="lazy"
+                style={{ imageRendering: 'high-quality' }}
               />
             </div>
           ))}

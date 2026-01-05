@@ -92,6 +92,7 @@ const EventForm = () => {
   const [tandas, setTandas] = useState<Tanda[]>([]);
 
   const [isUploadingImage, setIsUploadingImage] = useState(false);
+  const [imageFileInfo, setImageFileInfo] = useState<{ size: number; dimensions?: string } | null>(null);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -139,6 +140,9 @@ const EventForm = () => {
       longitude: event.longitude ? String(event.longitude) : '',
       isPublic: event.isPublic !== undefined ? event.isPublic : true,
     });
+    
+    // Limpiar información de archivo al cargar evento existente
+    setImageFileInfo(null);
     
     // Cargar tipos de entrada
     if (event.ticketTypes && event.ticketTypes.length > 0) {
@@ -470,6 +474,18 @@ const EventForm = () => {
       return;
     }
 
+    // Obtener dimensiones de la imagen
+    const img = new Image();
+    const objectUrl = URL.createObjectURL(file);
+    img.onload = () => {
+      setImageFileInfo({
+        size: file.size,
+        dimensions: `${img.width} x ${img.height}px`
+      });
+      URL.revokeObjectURL(objectUrl);
+    };
+    img.src = objectUrl;
+
     if (file.size > 5 * 1024 * 1024) {
       toast({
         title: 'Archivo muy grande',
@@ -491,6 +507,7 @@ const EventForm = () => {
           title: '✅ Imagen subida',
           description: 'La imagen se subió correctamente',
         });
+        // Mantener la información del archivo después de subir
       }
     } catch (error: any) {
       toast({
@@ -738,6 +755,24 @@ const EventForm = () => {
                       Imagen del Evento
                     </Label>
                     <div className="space-y-3">
+                      {/* Información sobre especificaciones */}
+                      <div className="p-4 bg-muted/50 rounded-lg border border-border">
+                        <div className="flex items-start gap-3">
+                          <Info className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" />
+                          <div className="space-y-2 text-sm">
+                            <p className="font-semibold text-foreground">Especificaciones recomendadas:</p>
+                            <ul className="space-y-1 text-muted-foreground list-disc list-inside">
+                              <li><strong>Tamaño:</strong> 1920 x 1080px (16:9) o superior</li>
+                              <li><strong>Peso máximo:</strong> 5MB</li>
+                              <li><strong>Formato:</strong> JPG, PNG, WEBP o GIF</li>
+                              <li><strong>Calidad:</strong> Alta resolución para mejor visualización en banners</li>
+                            </ul>
+                            <p className="text-xs text-muted-foreground mt-2">
+                              💡 Las imágenes de alta calidad mejoran la experiencia visual en los banners del sitio
+                            </p>
+                          </div>
+                        </div>
+                      </div>
                       <input
                         ref={fileInputRef}
                         type="file"
@@ -774,12 +809,28 @@ const EventForm = () => {
                           </span>
                         )}
                       </div>
+                      {/* Información del archivo seleccionado */}
+                      {imageFileInfo && (
+                        <div className="p-3 bg-secondary/10 rounded-lg border border-secondary/20">
+                          <div className="flex items-center gap-2 text-sm">
+                            <Info className="w-4 h-4 text-secondary" />
+                            <span className="font-medium">Archivo seleccionado:</span>
+                          </div>
+                          <div className="mt-2 space-y-1 text-sm text-muted-foreground">
+                            {imageFileInfo.dimensions && (
+                              <p><strong>Tamaño:</strong> {imageFileInfo.dimensions}</p>
+                            )}
+                            <p><strong>Peso:</strong> {(imageFileInfo.size / 1024 / 1024).toFixed(2)} MB</p>
+                          </div>
+                        </div>
+                      )}
                       {formData.image && (
                         <div className="mt-3 relative group">
                           <img
                             src={`${import.meta.env.VITE_BACKEND_URL || 'http://localhost:3000'}${formData.image}`}
                             alt="Preview"
                             className="w-full max-w-md h-48 object-cover rounded-lg border-2 border-border shadow-md"
+                            loading="eager"
                           />
                           <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors rounded-lg" />
                         </div>

@@ -1,4 +1,10 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+/* PULSO Branding - Tipografías */
+/* Tipografía Secundaria: Manrope */
+@import url('https://fonts.googleapis.com/css2?family=Manrope:wght@300;400;500;600;700;800&display=swap');
+
+/* Tipografía Primaria: Arupala Grotesk */
+/* Nota: Arupala Grotesk es una fuente premium. Usamos Space Grotesk como alternativa similar */
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -6,45 +12,51 @@
 
 @layer base {
   :root {
-    --background: 210 20% 98%;
-    --foreground: 215 25% 15%;
+    /* PULSO Branding - Colores principales */
+    --background: 0 0% 100%;
+    --foreground: 0 0% 0%;
 
     --card: 0 0% 100%;
-    --card-foreground: 215 25% 15%;
+    --card-foreground: 0 0% 0%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 215 25% 15%;
+    --popover-foreground: 0 0% 0%;
 
-    --primary: 210 60% 25%;
-    --primary-foreground: 210 40% 98%;
+    /* Purple Pulso como primary */
+    --primary: 280 75% 55%;
+    --primary-foreground: 0 0% 100%;
 
-    --secondary: 185 60% 45%;
+    /* Magenta como secondary */
+    --secondary: 310 65% 55%;
     --secondary-foreground: 0 0% 100%;
 
-    --muted: 210 20% 94%;
-    --muted-foreground: 215 15% 45%;
+    --muted: 0 0% 96%;
+    --muted-foreground: 0 0% 45%;
 
-    --accent: 35 100% 55%;
-    --accent-foreground: 215 25% 15%;
+    /* Coral como accent */
+    --accent: 355 90% 62%;
+    --accent-foreground: 0 0% 100%;
 
     --destructive: 0 84% 60%;
-    --destructive-foreground: 210 40% 98%;
+    --destructive-foreground: 0 0% 100%;
 
-    --border: 210 20% 90%;
-    --input: 210 20% 90%;
-    --ring: 210 60% 25%;
+    --border: 0 0% 90%;
+    --input: 0 0% 90%;
+    --ring: 280 75% 55%;
 
     --radius: 0.75rem;
 
-    /* Custom tokens */
-    --gradient-primary: linear-gradient(135deg, hsl(210 60% 25%) 0%, hsl(210 70% 35%) 100%);
-    --gradient-secondary: linear-gradient(135deg, hsl(185 60% 45%) 0%, hsl(185 70% 55%) 100%);
-    --gradient-hero: linear-gradient(135deg, hsl(210 60% 20%) 0%, hsl(220 50% 30%) 50%, hsl(185 50% 35%) 100%);
-    --gradient-card: linear-gradient(180deg, hsl(0 0% 100%) 0%, hsl(210 20% 98%) 100%);
+    /* PULSO Custom tokens */
+    --gradient-primary: linear-gradient(135deg, #9D1FDA 0%, #C73DB9 100%);
+    --gradient-secondary: linear-gradient(135deg, #C73DB9 0%, #F74657 100%);
+    --gradient-hero: linear-gradient(135deg, #000000 0%, #9D1FDA 50%, #C73DB9 100%);
+    --gradient-card: linear-gradient(180deg, #FFFFFF 0%, #F5F5F5 100%);
+    --gradient-pulso: linear-gradient(135deg, #9D1FDA 0%, #C73DB9 50%, #F74657 100%);
     
-    --shadow-soft: 0 4px 20px -4px hsl(210 60% 25% / 0.15);
-    --shadow-medium: 0 8px 30px -6px hsl(210 60% 25% / 0.2);
-    --shadow-glow: 0 0 40px hsl(185 60% 45% / 0.3);
+    --shadow-soft: 0 4px 20px -4px #9D1FDA26;
+    --shadow-medium: 0 8px 30px -6px #9D1FDA40;
+    --shadow-glow: 0 0 40px #9D1FDA66;
+    --shadow-pulso: 0 0 60px #9D1FDA80;
 
     --sidebar-background: 0 0% 98%;
     --sidebar-foreground: 240 5.3% 26.1%;
@@ -57,41 +69,48 @@
   }
 
   .dark {
-    --background: 215 30% 8%;
-    --foreground: 210 40% 98%;
+    /* PULSO Dark Mode - Fondo negro con acentos púrpura */
+    --background: 0 0% 0%;
+    --foreground: 0 0% 100%;
 
-    --card: 215 30% 12%;
-    --card-foreground: 210 40% 98%;
+    --card: 0 0% 8%;
+    --card-foreground: 0 0% 100%;
 
-    --popover: 215 30% 12%;
-    --popover-foreground: 210 40% 98%;
+    --popover: 0 0% 8%;
+    --popover-foreground: 0 0% 100%;
 
-    --primary: 185 60% 50%;
-    --primary-foreground: 215 30% 8%;
+    /* Purple Pulso como primary en dark */
+    --primary: 280 75% 60%;
+    --primary-foreground: 0 0% 100%;
 
-    --secondary: 210 50% 30%;
-    --secondary-foreground: 210 40% 98%;
+    /* Magenta como secondary */
+    --secondary: 310 65% 60%;
+    --secondary-foreground: 0 0% 100%;
 
-    --muted: 215 25% 18%;
-    --muted-foreground: 215 15% 60%;
+    --muted: 0 0% 15%;
+    --muted-foreground: 0 0% 70%;
 
-    --accent: 35 100% 55%;
-    --accent-foreground: 215 30% 8%;
+    /* Coral como accent */
+    --accent: 355 90% 65%;
+    --accent-foreground: 0 0% 100%;
 
-    --destructive: 0 62% 50%;
-    --destructive-foreground: 210 40% 98%;
+    --destructive: 0 70% 55%;
+    --destructive-foreground: 0 0% 100%;
 
-    --border: 215 25% 20%;
-    --input: 215 25% 20%;
-    --ring: 185 60% 50%;
+    --border: 0 0% 20%;
+    --input: 0 0% 20%;
+    --ring: 280 75% 60%;
 
-    --gradient-primary: linear-gradient(135deg, hsl(185 60% 45%) 0%, hsl(185 70% 55%) 100%);
-    --gradient-hero: linear-gradient(135deg, hsl(215 30% 5%) 0%, hsl(220 40% 15%) 50%, hsl(185 40% 20%) 100%);
-    --gradient-card: linear-gradient(180deg, hsl(215 30% 14%) 0%, hsl(215 30% 10%) 100%);
+    /* PULSO Dark gradients */
+    --gradient-primary: linear-gradient(135deg, #9D1FDA 0%, #C73DB9 100%);
+    --gradient-hero: linear-gradient(135deg, #000000 0%, #1a0a2e 50%, #9D1FDA 100%);
+    --gradient-card: linear-gradient(180deg, #0a0a0a 0%, #000000 100%);
+    --gradient-pulso: linear-gradient(135deg, #9D1FDA 0%, #C73DB9 50%, #F74657 100%);
     
-    --shadow-soft: 0 4px 20px -4px hsl(0 0% 0% / 0.4);
-    --shadow-medium: 0 8px 30px -6px hsl(0 0% 0% / 0.5);
-    --shadow-glow: 0 0 40px hsl(185 60% 45% / 0.2);
+    --shadow-soft: 0 4px 20px -4px #00000099;
+    --shadow-medium: 0 8px 30px -6px #000000B3;
+    --shadow-glow: 0 0 40px #9D1FDA66;
+    --shadow-pulso: 0 0 60px #9D1FDA99;
   }
 }
 
@@ -102,44 +121,56 @@
 
   body {
     @apply bg-background text-foreground font-sans antialiased transition-colors duration-300;
-    font-family: 'Inter', sans-serif;
-    overflow-x: hidden;
-    max-width: 100vw;
-    margin: 0;
-    padding: 0;
   }
   
   html {
     @apply transition-colors duration-300;
-    overflow-x: hidden;
-    max-width: 100vw;
-    height: 100%;
-    margin: 0;
-    padding: 0;
-  }
-  
-  #root {
-    overflow-x: hidden;
-    max-width: 100vw;
-    min-height: 100vh;
-    display: flex;
-    flex-direction: column;
-  }
-
-  h1, h2, h3, h4, h5, h6 {
-    @apply font-semibold tracking-tight;
   }
 }
 
 @layer components {
   .glass-card {
-    @apply bg-card/80 backdrop-blur-md border border-border/50;
+    @apply backdrop-blur-md border;
+    background-color: hsl(var(--card) / 80%);
+    border-color: hsl(var(--border) / 50%);
     box-shadow: var(--shadow-soft);
   }
 
   .gradient-text {
     @apply bg-clip-text text-transparent;
+    background-image: var(--gradient-pulso);
+  }
+  
+  .gradient-text-primary {
+    @apply bg-clip-text text-transparent;
     background-image: var(--gradient-primary);
+  }
+  
+  .pulso-heart {
+    position: relative;
+  }
+  
+  .pulso-heart::before {
+    content: '';
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    background: radial-gradient(circle, #9D1FDA1A 0%, transparent 70%);
+    pointer-events: none;
+  }
+
+  .pulso-tagline {
+    font-family: 'Space Grotesk', 'Manrope', system-ui, sans-serif;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    line-height: 1.4;
+  }
+
+  .pulso-brand-text {
+    font-family: 'Space Grotesk', 'Manrope', system-ui, sans-serif;
+    font-weight: 700;
+    letter-spacing: -0.02em;
   }
 
   .hover-lift {
@@ -162,15 +193,20 @@
   }
 
   .category-chip {
-    @apply px-4 py-2 rounded-full border border-border bg-card text-foreground font-medium transition-all duration-200;
+    @apply px-4 py-2 rounded-full border font-medium transition-all duration-200;
+    border-color: hsl(var(--border));
+    background-color: hsl(var(--card));
+    color: hsl(var(--foreground));
   }
 
   .category-chip:hover {
-    @apply border-secondary bg-secondary/10 text-secondary;
+    @apply border-secondary text-secondary;
+    background-color: hsl(var(--secondary) / 10%);
   }
 
   .category-chip.active {
-    @apply bg-primary text-primary-foreground border-primary;
+    @apply text-primary-foreground border-primary;
+    background-color: hsl(var(--primary));
   }
 }
 
@@ -224,4 +260,36 @@
   .stagger-2 { animation-delay: 0.2s; }
   .stagger-3 { animation-delay: 0.3s; }
   .stagger-4 { animation-delay: 0.4s; }
+}
+
+/* Estilos globales fuera de @layer para evitar problemas de parsing */
+body {
+  font-family: 'Manrope', system-ui, sans-serif;
+  overflow-x: hidden;
+  max-width: 100vw;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  overflow-x: hidden;
+  max-width: 100vw;
+  height: 100%;
+  margin: 0;
+  padding: 0;
+}
+
+#root {
+  overflow-x: hidden;
+  max-width: 100vw;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Tipografía Primaria: Arupala Grotesk (o Space Grotesk como alternativa) */
+h1, h2, h3, h4, h5, h6 {
+  font-family: 'Space Grotesk', 'Manrope', system-ui, sans-serif;
+  font-weight: 700;
+  letter-spacing: -0.02em;
 }

@@ -166,11 +166,21 @@ const HeroSlider = () => {
 
   if (error || slides.length === 0) {
     return (
-      <section className="relative h-[600px] md:h-[700px] overflow-hidden flex items-center justify-center bg-gradient-to-r from-primary/20 to-secondary/20">
-        <div className="text-center">
-          <p className="text-xl text-muted-foreground">Tu plataforma de entradas</p>
+      <section className="relative h-[600px] md:h-[700px] overflow-hidden flex items-center justify-center bg-gradient-to-br from-pulso-black via-pulso-purple/30 to-pulso-black">
+        <div className="absolute inset-0 bg-gradient-to-r from-pulso-purple/20 via-transparent to-pulso-magenta/20" />
+        <div className="relative z-10 text-center px-4">
+          <h1 className="text-4xl md:text-6xl font-display font-bold mb-4 bg-gradient-to-r from-white via-pulso-purple to-pulso-magenta bg-clip-text text-transparent">
+            PULSO
+          </h1>
+          <div className="space-y-2 mb-6 pulso-tagline">
+            <p className="text-white/90 text-lg md:text-xl">RITMO DEL CORAZÓN</p>
+            <p className="text-white/90 text-lg md:text-xl">ALMA DE LA MÚSICA</p>
+          </div>
+          <p className="text-white/70 text-base md:text-lg max-w-2xl mx-auto">
+            Una vibrante productora desarrolladora de eventos. Creando experiencias únicas y memorables.
+          </p>
           {error && (
-            <p className="text-sm text-muted-foreground mt-4">No se pudieron cargar los eventos destacados</p>
+            <p className="text-sm text-white/50 mt-4">No se pudieron cargar los eventos destacados</p>
           )}
         </div>
       </section>
@@ -185,13 +195,14 @@ const HeroSlider = () => {
       onTouchStart={onTouchStart}
       onTouchMove={onTouchMove}
       onTouchEnd={onTouchEnd}
+      style={{ willChange: 'transform' }}
     >
       {/* Slides */}
       {slides.map((slide, index) => (
         <div
           key={slide.id}
           className={cn(
-            'absolute inset-0 transition-all duration-700 ease-in-out',
+            'absolute inset-0 transition-all duration-700 ease-in-out group',
             index === currentSlide ? 'opacity-100 scale-100 z-20' : 'opacity-0 scale-105 z-10 pointer-events-none'
           )}
           style={{
@@ -200,15 +211,26 @@ const HeroSlider = () => {
         >
           {/* Background Image */}
           <div 
-            className="absolute inset-0 bg-cover bg-center"
-            style={{ backgroundImage: `url(${slide.image})` }}
+            className="absolute inset-0 bg-cover bg-center transition-transform duration-[20s] ease-out group-hover:scale-110"
+            style={{ 
+              backgroundImage: `url(${slide.image})`,
+              imageRendering: 'high-quality',
+              willChange: 'transform',
+              transformOrigin: 'center center'
+            }}
           />
           
-          {/* Overlay - Solo en modo claro */}
+          {/* Overlay PULSO - Gradiente púrpura/magenta */}
           {theme === 'light' && (
             <>
-              <div className="absolute inset-0 bg-gradient-to-r from-foreground/80 via-foreground/50 to-transparent" />
-              <div className="absolute inset-0 bg-gradient-to-t from-foreground/60 via-transparent to-foreground/30" />
+              <div className="absolute inset-0 bg-gradient-to-r from-pulso-black/80 via-pulso-purple/60 to-transparent" />
+              <div className="absolute inset-0 bg-gradient-to-t from-pulso-black/70 via-transparent to-pulso-purple/40" />
+            </>
+          )}
+          {theme === 'dark' && (
+            <>
+              <div className="absolute inset-0 bg-gradient-to-r from-pulso-black/90 via-pulso-purple/50 to-transparent" />
+              <div className="absolute inset-0 bg-gradient-to-t from-pulso-black/80 via-transparent to-pulso-purple/30" />
             </>
           )}
 
@@ -223,7 +245,7 @@ const HeroSlider = () => {
               theme === 'dark' ? 'text-white' : 'text-card',
               index === currentSlide ? 'translate-x-0 opacity-100' : '-translate-x-10 opacity-0'
             )}>
-              <span className="inline-block px-3 py-1 bg-secondary text-secondary-foreground text-xs font-semibold rounded-full mb-4">
+              <span className="inline-block px-4 py-1.5 bg-gradient-to-r from-pulso-purple via-pulso-magenta to-pulso-coral text-white text-xs font-semibold rounded-full mb-4 shadow-lg shadow-pulso-purple/30">
                 🔥 Evento destacado
               </span>
               <h1 className={cn(

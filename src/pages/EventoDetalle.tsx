@@ -284,10 +284,15 @@ const EventoDetalle = () => {
       
       <main className="pt-16">
         {/* Hero Banner */}
-        <div className="relative h-[400px] sm:h-[450px] md:h-[550px] overflow-hidden">
+        <div className="relative h-[400px] sm:h-[450px] md:h-[550px] overflow-hidden group" style={{ willChange: 'transform' }}>
           <div 
-            className="absolute inset-0 bg-cover bg-center transition-transform duration-700 hover:scale-105"
-            style={{ backgroundImage: `url(${eventData.image})` }}
+            className="absolute inset-0 bg-cover bg-center transition-transform duration-[20s] ease-out group-hover:scale-110"
+            style={{ 
+              backgroundImage: `url(${eventData.image})`,
+              imageRendering: 'high-quality',
+              willChange: 'transform',
+              transformOrigin: 'center center'
+            }}
           />
           <div className="absolute inset-0 bg-gradient-to-t from-background via-background/60 to-transparent" />
           

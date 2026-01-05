@@ -36,12 +36,12 @@ const Categories = ({ onCategoryChange }: CategoriesProps) => {
   const categories = useMemo(() => {
     if (error || !eventsResponse?.data) {
       return [
-        { id: 'all', label: 'Todos', icon: Sparkles, color: 'from-primary via-secondary to-primary' },
-        { id: 'musica', label: 'Música', icon: Music, color: 'from-purple-500 via-pink-500 to-purple-600' },
-        { id: 'teatro', label: 'Teatro', icon: Theater, color: 'from-blue-500 via-cyan-500 to-blue-600' },
-        { id: 'standup', label: 'Stand Up', icon: Mic, color: 'from-orange-500 via-red-500 to-orange-600' },
-        { id: 'fiestas', label: 'Fiestas', icon: PartyPopper, color: 'from-yellow-500 via-orange-500 to-yellow-600' },
-        { id: 'deportes', label: 'Deportes', icon: Trophy, color: 'from-green-500 via-emerald-500 to-green-600' },
+        { id: 'all', label: 'Todos', icon: Sparkles, color: 'from-pulso-purple via-pulso-magenta to-pulso-coral' },
+        { id: 'musica', label: 'Música', icon: Music, color: 'from-pulso-purple via-pulso-magenta to-pulso-purple' },
+        { id: 'teatro', label: 'Teatro', icon: Theater, color: 'from-pulso-blue via-pulso-purple to-pulso-blue' },
+        { id: 'standup', label: 'Stand Up', icon: Mic, color: 'from-pulso-coral via-pulso-orange to-pulso-coral' },
+        { id: 'fiestas', label: 'Fiestas', icon: PartyPopper, color: 'from-pulso-yellow via-pulso-orange to-pulso-yellow' },
+        { id: 'deportes', label: 'Deportes', icon: Trophy, color: 'from-pulso-green via-pulso-yellow to-pulso-green' },
       ];
     }
 
@@ -57,13 +57,14 @@ const Categories = ({ onCategoryChange }: CategoriesProps) => {
     }
 
     const categoryList = Array.from(cats).sort().map((cat, index) => {
+      // Paleta de colores PULSO
       const colors = [
-        'from-purple-500 via-pink-500 to-purple-600',
-        'from-blue-500 via-cyan-500 to-blue-600',
-        'from-orange-500 via-red-500 to-orange-600',
-        'from-yellow-500 via-orange-500 to-yellow-600',
-        'from-green-500 via-emerald-500 to-green-600',
-        'from-indigo-500 via-purple-500 to-indigo-600',
+        'from-pulso-purple via-pulso-magenta to-pulso-purple',
+        'from-pulso-coral via-pulso-orange to-pulso-coral',
+        'from-pulso-blue via-pulso-purple to-pulso-blue',
+        'from-pulso-green via-pulso-yellow to-pulso-green',
+        'from-pulso-magenta via-pulso-purple to-pulso-magenta',
+        'from-pulso-yellow via-pulso-orange to-pulso-yellow',
       ];
       return {
         id: cat.toLowerCase().replace(/\s+/g, ''),

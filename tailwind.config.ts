@@ -14,9 +14,21 @@ export default {
     },
     extend: {
       fontFamily: {
-        sans: ['Inter', 'system-ui', 'sans-serif'],
+        sans: ['Manrope', 'system-ui', 'sans-serif'], // Tipografía Secundaria
+        display: ['Space Grotesk', 'Manrope', 'system-ui', 'sans-serif'], // Tipografía Primaria (alternativa a Arupala Grotesk)
       },
       colors: {
+        pulso: {
+          purple: '#9D1FDA',
+          white: '#FFFFFF',
+          black: '#000000',
+          coral: '#F74657',
+          orange: '#FF6728',
+          magenta: '#C73DB9',
+          green: '#53C373',
+          blue: '#5555C6',
+          yellow: '#F1B01A',
+        },
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",
         ring: "hsl(var(--ring))",

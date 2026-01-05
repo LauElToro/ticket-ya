@@ -46,11 +46,15 @@ const Header = () => {
     >
       <div className="container mx-auto px-4">
         <div className="flex items-center justify-between h-16 md:h-20">
-          {/* Logo */}
+          {/* Logo PULSO */}
           <Link to="/" className="flex items-center gap-3 group">
-            <div className="w-12 h-12 rounded-full bg-black flex items-center justify-center transition-transform group-hover:scale-105 shadow-lg">
-              <span className="text-white font-bold text-sm tracking-tight">PULSO</span>
+            <div className="relative w-12 h-12 rounded-full bg-gradient-to-br from-pulso-purple via-pulso-magenta to-pulso-coral flex items-center justify-center transition-all duration-300 group-hover:scale-110 shadow-lg shadow-pulso-purple/30">
+              <span className="text-white font-display font-bold text-xs tracking-tight relative z-10 pulso-brand-text">PULSO</span>
+              <div className="absolute inset-0 rounded-full bg-gradient-to-br from-pulso-purple/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
             </div>
+            <span className="hidden md:block font-display font-bold text-xl bg-gradient-to-r from-pulso-purple via-pulso-magenta to-pulso-coral bg-clip-text text-transparent pulso-brand-text">
+              PULSO
+            </span>
           </Link>
 
           {/* Desktop Navigation */}

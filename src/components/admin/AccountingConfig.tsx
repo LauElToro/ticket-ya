@@ -266,3 +266,5 @@ const AccountingConfig = ({ config, onSave }: AccountingConfigProps) => {
 export default AccountingConfig;
 
 
+
+
