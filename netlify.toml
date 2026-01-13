@@ -3,6 +3,9 @@
   command = "npm run build"
   publish = "dist"
 
+  [build.environment]
+    VITE_API_URL = "https://2cd25ca021f0.ngrok-free.app/api"
+
 # Opcional: config local con Netlify CLI
 [dev]
   command = "npm run dev"
