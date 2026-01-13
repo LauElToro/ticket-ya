@@ -4,7 +4,7 @@
   publish = "dist"
 
   [build.environment]
-    VITE_API_URL = "https://2c61fe2a7498.ngrok-free.app/api"
+    VITE_API_URL = "https://c407b8862461.ngrok-free.app/api"
 
 # Opcional: config local con Netlify CLI
 [dev]
