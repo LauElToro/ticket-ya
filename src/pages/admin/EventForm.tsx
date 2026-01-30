@@ -4,6 +4,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
 import { adminApi, eventsApi, uploadApi } from '@/lib/api';
+import { getEventImageUrl } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -824,7 +825,7 @@ const EventForm = () => {
                       {formData.image && (
                         <div className="mt-3 relative group">
                           <img
-                            src={formData.image.startsWith('http') ? formData.image : `${import.meta.env.VITE_API_URL?.replace(/\/api\/?$/, '') || 'http://localhost:3000'}${formData.image}`}
+                            src={getEventImageUrl(formData.image)}
                             alt="Preview"
                             className="w-full max-w-md h-48 object-cover rounded-lg border-2 border-border shadow-md"
                             loading="eager"

@@ -8,7 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { Calendar, MapPin, Clock, Heart, Loader2, ArrowRight } from 'lucide-react';
 import { favoriteApi } from '@/lib/api';
 import { useAuth } from '@/contexts/AuthContext';
-import { cn } from '@/lib/utils';
+import { cn, getEventImageUrl } from '@/lib/utils';
 
 const Favoritos = () => {
   const { user } = useAuth();
@@ -95,9 +95,7 @@ const Favoritos = () => {
                   year: 'numeric',
                 });
 
-                const imageUrl = event.image
-                  ? `${import.meta.env.VITE_BACKEND_URL || 'http://localhost:3000'}${event.image}`
-                  : 'https://images.unsplash.com/photo-1540039155733-5bb30b53aa14?w=400&q=80';
+                const imageUrl = getEventImageUrl(event.image, '400');
 
                 const isPast = eventDate < new Date();
 

@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { ChevronLeft, ChevronRight, Calendar, MapPin, Loader2 } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { cn, getEventImageUrl } from '@/lib/utils';
 import { Link, useNavigate } from 'react-router-dom';
 import { eventsApi } from '@/lib/api';
 import { useTheme } from '@/contexts/ThemeContext';
@@ -96,9 +96,7 @@ const HeroSlider = () => {
           year: 'numeric',
         });
 
-        const imageUrl = event.image
-          ? `${import.meta.env.VITE_BACKEND_URL || 'http://localhost:3000'}${event.image}`
-          : 'https://images.unsplash.com/photo-1540039155733-5bb30b53aa14?w=1920&q=80';
+        const imageUrl = getEventImageUrl(event.image, '1920');
 
         return {
           id: event.id,

@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Calendar, MapPin, Clock, Users, Share2, Heart, Minus, Plus, ShieldCheck, Info, Loader2, ExternalLink, Navigation, Ticket as TicketIcon, Star } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { eventsApi, favoriteApi } from '@/lib/api';
+import { getEventImageUrl } from '@/lib/utils';
 import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
 import { useAuth } from '@/contexts/AuthContext';
@@ -75,9 +76,7 @@ const EventoDetalle = () => {
       year: 'numeric',
     });
 
-    const imageUrl = event.image
-      ? `${import.meta.env.VITE_BACKEND_URL || 'http://localhost:3000'}${event.image}`
-      : 'https://images.unsplash.com/photo-1540039155733-5bb30b53aa14?w=1920&q=80';
+    const imageUrl = getEventImageUrl(event.image, '1920');
 
     // Obtener la tanda activa (la que está en el rango de fechas actual)
     const now = new Date();

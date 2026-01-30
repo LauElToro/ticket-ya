@@ -9,7 +9,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Separator } from '@/components/ui/separator';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Calendar, MapPin, QrCode, Download, Clock, CheckCircle, Loader2, ArrowRight, Eye, Share2, AlertCircle, RefreshCw, User, Send, Copy } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { cn, getEventImageUrl } from '@/lib/utils';
 import { ticketsApi, userApi, transferApi } from '@/lib/api';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from '@/hooks/use-toast';
@@ -89,9 +89,7 @@ const MisEntradas = () => {
       const expiresDate = new Date(ticket.expiresAt);
       const isExpired = expiresDate < new Date();
 
-      const imageUrl = ticket.event.image
-        ? `${import.meta.env.VITE_BACKEND_URL || 'http://localhost:3000'}${ticket.event.image}`
-        : 'https://images.unsplash.com/photo-1540039155733-5bb30b53aa14?w=400&q=80';
+      const imageUrl = getEventImageUrl(ticket.event.image, '400');
 
       return {
         id: ticket.id,

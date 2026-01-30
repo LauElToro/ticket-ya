@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { eventsApi } from '@/lib/api';
-import { cn } from '@/lib/utils';
+import { cn, getEventImageUrl } from '@/lib/utils';
 
 const EventImagesCarousel = () => {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -31,12 +31,7 @@ const EventImagesCarousel = () => {
           }
           return true;
         })
-        .map((event: any) => {
-          if (event.image) {
-            return `${import.meta.env.VITE_BACKEND_URL || 'http://localhost:3000'}${event.image}`;
-          }
-          return 'https://images.unsplash.com/photo-1540039155733-5bb30b53aa14?w=800&q=80';
-        })
+        .map((event: any) => getEventImageUrl(event.image, '800'))
         .filter((img: string) => img);
       
       // Duplicar imágenes para efecto infinito

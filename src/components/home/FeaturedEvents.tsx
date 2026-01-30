@@ -2,6 +2,7 @@ import { useQuery } from '@tanstack/react-query';
 import { useMemo } from 'react';
 import EventCard, { EventCardProps } from './EventCard';
 import { eventsApi } from '@/lib/api';
+import { getEventImageUrl } from '@/lib/utils';
 import { Loader2, Sparkles } from 'lucide-react';
 
 const FeaturedEvents = () => {
@@ -86,9 +87,7 @@ const FeaturedEvents = () => {
           year: 'numeric',
         });
 
-        const imageUrl = event.image
-          ? `${import.meta.env.VITE_BACKEND_URL || 'http://localhost:3000'}${event.image}`
-          : 'https://images.unsplash.com/photo-1540039155733-5bb30b53aa14?w=800&q=80';
+        const imageUrl = getEventImageUrl(event.image, '800');
 
         // Calcular entradas disponibles
         let totalAvailable = 0;

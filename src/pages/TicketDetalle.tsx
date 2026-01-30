@@ -27,6 +27,7 @@ import {
 } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { ticketsApi, transferApi } from '@/lib/api';
+import { getEventImageUrl } from '@/lib/utils';
 import { useAuth } from '@/contexts/AuthContext';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
@@ -252,9 +253,7 @@ const TicketDetalle = () => {
     year: 'numeric',
   });
 
-  const imageUrl = event.image
-    ? `${import.meta.env.VITE_BACKEND_URL || 'http://localhost:3000'}${event.image}`
-    : 'https://images.unsplash.com/photo-1540039155733-5bb30b53aa14?w=800&q=80';
+  const imageUrl = getEventImageUrl(event.image, '800');
 
   const directionsUrl = getGoogleMapsDirections();
 

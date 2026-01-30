@@ -9,7 +9,7 @@ import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ShieldCheck, Wallet, Banknote, Building2, Check, ArrowLeft, Loader2, MapPin, ExternalLink, Copy, CheckCircle } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { cn, getEventImageUrl } from '@/lib/utils';
 import { toast } from '@/hooks/use-toast';
 import { paymentPlacesApi, ordersApi, paymentApi, api } from '@/lib/api';
 import { useAuth } from '@/contexts/AuthContext';
@@ -605,7 +605,7 @@ const Checkout = () => {
                   <div className="flex gap-3">
                     <div className="w-16 h-16 rounded-lg bg-muted overflow-hidden flex-shrink-0">
                       <img
-                        src={eventData.image || 'https://images.unsplash.com/photo-1540039155733-5bb30b53aa14?w=200&q=80'}
+                        src={getEventImageUrl(eventData.image, '200')}
                         alt={eventData.title}
                         className="w-full h-full object-cover"
                       />

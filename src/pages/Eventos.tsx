@@ -11,7 +11,7 @@ import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Search, Filter, X, Loader2, Calendar, MapPin, Tag, DollarSign, ArrowUpDown, SlidersHorizontal } from 'lucide-react';
 import { eventsApi } from '@/lib/api';
-import { cn } from '@/lib/utils';
+import { cn, getEventImageUrl } from '@/lib/utils';
 
 const Eventos = () => {
   const [searchQuery, setSearchQuery] = useState('');
@@ -109,9 +109,7 @@ const Eventos = () => {
         year: 'numeric',
       });
 
-      const imageUrl = event.image
-        ? `${import.meta.env.VITE_BACKEND_URL || 'http://localhost:3000'}${event.image}`
-        : 'https://images.unsplash.com/photo-1540039155733-5bb30b53aa14?w=800&q=80';
+      const imageUrl = getEventImageUrl(event.image, '800');
 
       // Calcular entradas disponibles
       let totalAvailable = 0;
