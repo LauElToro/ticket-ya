@@ -502,18 +502,39 @@ export const healthApi = {
 };
 
 export const uploadApi = {
-  uploadImage: (formData: FormData) => {
+  /**
+   * Subida de imagen: en producción (Vercel) usa body crudo (/image-raw, estilo Vercel Blob).
+   * En local usa multipart (/image) para guardar en disco.
+   */
+  uploadImage: (file: File) => {
     const token = localStorage.getItem('token');
-    return fetch(`${API_URL}/upload/image`, {
+    const isLocal = API_URL.includes('localhost') || API_URL.includes('127.0.0.1');
+
+    if (isLocal) {
+      const formData = new FormData();
+      formData.append('image', file);
+      return fetch(`${API_URL}/upload/image`, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${token}` },
+        body: formData,
+        credentials: 'include',
+      }).then(res => {
+        if (!res.ok) return res.json().then((err: { error?: { message?: string }; message?: string }) => Promise.reject(new Error(err.error?.message || err.message || 'Error al subir')));
+        return res.json();
+      });
+    }
+
+    const url = `${API_URL}/upload/image-raw?filename=${encodeURIComponent(file.name)}`;
+    return fetch(url, {
       method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${token}`,
-      },
-      body: formData,
+      headers: { 'Authorization': `Bearer ${token}` },
+      body: file,
       credentials: 'include',
     }).then(res => {
       if (!res.ok) {
-        return res.json().then(err => Promise.reject(err));
+        return res.json().then((err: { error?: { message?: string }; message?: string }) =>
+          Promise.reject(new Error(err.error?.message || err.message || 'Error al subir'))
+        );
       }
       return res.json();
     });

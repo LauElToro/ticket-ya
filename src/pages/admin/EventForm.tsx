@@ -497,10 +497,7 @@ const EventForm = () => {
 
     setIsUploadingImage(true);
     try {
-      const formDataUpload = new FormData();
-      formDataUpload.append('image', file);
-      
-      const response = await uploadApi.uploadImage(formDataUpload);
+      const response = await uploadApi.uploadImage(file);
       if (response.success) {
         setFormData({ ...formData, image: response.data.url });
         toast({
@@ -827,7 +824,7 @@ const EventForm = () => {
                       {formData.image && (
                         <div className="mt-3 relative group">
                           <img
-                            src={`${import.meta.env.VITE_BACKEND_URL || 'http://localhost:3000'}${formData.image}`}
+                            src={formData.image.startsWith('http') ? formData.image : `${import.meta.env.VITE_API_URL?.replace(/\/api\/?$/, '') || 'http://localhost:3000'}${formData.image}`}
                             alt="Preview"
                             className="w-full max-w-md h-48 object-cover rounded-lg border-2 border-border shadow-md"
                             loading="eager"
