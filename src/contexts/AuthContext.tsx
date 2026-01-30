@@ -163,9 +163,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           }
         })
         .finally(() => {
-          if (!storedRefreshToken) {
-            setIsLoading(false);
-          }
+          setIsLoading(false);
         });
     } else {
       setIsLoading(false);

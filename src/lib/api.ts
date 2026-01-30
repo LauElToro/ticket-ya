@@ -3,6 +3,8 @@ const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
 class ApiClient {
   private baseURL: string;
   private token: string | null = null;
+  /** Una sola renovación de token a la vez; otras peticiones 401 esperan a esta */
+  private refreshPromise: Promise<string | null> | null = null;
 
   constructor(baseURL: string) {
     this.baseURL = baseURL;
@@ -38,6 +40,44 @@ class ApiClient {
     return null;
   }
 
+  /**
+   * Renueva el token usando refreshToken. Solo una llamada a la vez;
+   * si otra petición ya está renovando, espera a esa.
+   * @returns Nuevo access token o null si falló
+   */
+  private async doRefresh(): Promise<string | null> {
+    if (this.refreshPromise) {
+      return this.refreshPromise;
+    }
+    const refreshToken = this.getRefreshToken();
+    if (!refreshToken) {
+      return null;
+    }
+    this.refreshPromise = (async () => {
+      try {
+        const refreshResponse = await fetch(`${this.baseURL}/auth/refresh`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ refreshToken }),
+          credentials: 'include',
+        });
+        if (refreshResponse.ok) {
+          const refreshData = await refreshResponse.json();
+          if (refreshData.success && refreshData.data?.token) {
+            this.setToken(refreshData.data.token);
+            return refreshData.data.token;
+          }
+        }
+      } catch (e) {
+        console.error('Error al renovar token:', e);
+      } finally {
+        this.refreshPromise = null;
+      }
+      return null;
+    })();
+    return this.refreshPromise;
+  }
+
   private async request<T>(
     endpoint: string,
     options: RequestInit = {}
@@ -65,59 +105,35 @@ class ApiClient {
     });
 
     if (!response.ok) {
-      // Si es error 401, intentar renovar el token
+      // Si es error 401, intentar renovar el token (una sola renovación a la vez; el resto espera)
       if (response.status === 401) {
-        const refreshToken = this.getRefreshToken();
-        
-        if (refreshToken) {
-          try {
-            // Intentar renovar el token
-            const refreshResponse = await fetch(`${this.baseURL}/auth/refresh`, {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-              },
-              body: JSON.stringify({ refreshToken }),
-              credentials: 'include',
-            });
-
-            if (refreshResponse.ok) {
-              const refreshData = await refreshResponse.json();
-              if (refreshData.success && refreshData.data?.token) {
-                // Guardar el nuevo token y reintentar la petición original
-                this.setToken(refreshData.data.token);
-                // Reintentar la petición original con el nuevo token
-                const retryHeaders: HeadersInit = {
-                  'Content-Type': 'application/json',
-                  ...options.headers,
-                  'Authorization': `Bearer ${refreshData.data.token}`,
-                };
-                const retryResponse = await fetch(url, {
-                  ...options,
-                  headers: retryHeaders,
-                  credentials: 'include',
-                });
-                
-                if (retryResponse.ok) {
-                  return await retryResponse.json();
-                }
-              }
-            }
-          } catch (refreshError) {
-            console.error('Error al renovar token:', refreshError);
+        const newToken = await this.doRefresh();
+        if (newToken) {
+          const retryHeaders: HeadersInit = {
+            'Content-Type': 'application/json',
+            ...options.headers,
+            'Authorization': `Bearer ${newToken}`,
+          };
+          const retryResponse = await fetch(url, {
+            ...options,
+            headers: retryHeaders,
+            credentials: 'include',
+          });
+          if (retryResponse.ok) {
+            return await retryResponse.json();
           }
-        }
-        
-        // Si no se pudo renovar, limpiar todo y redirigir a login
-        this.setToken(null);
-        this.setRefreshToken(null);
-        if (typeof window !== 'undefined') {
-          localStorage.removeItem('token');
-          localStorage.removeItem('refreshToken');
-          localStorage.removeItem('user');
-          // Redirigir a login si estamos en el navegador
-          if (window.location.pathname !== '/login' && window.location.pathname !== '/register') {
-            window.location.href = '/login';
+          // Si el reintento también falla (ej. 403), dejamos que caiga al throw de abajo
+        } else {
+          // No se pudo renovar: limpiar sesión y redirigir a login
+          this.setToken(null);
+          this.setRefreshToken(null);
+          if (typeof window !== 'undefined') {
+            localStorage.removeItem('token');
+            localStorage.removeItem('refreshToken');
+            localStorage.removeItem('user');
+            if (window.location.pathname !== '/login' && window.location.pathname !== '/register') {
+              window.location.href = '/login';
+            }
           }
         }
       }
