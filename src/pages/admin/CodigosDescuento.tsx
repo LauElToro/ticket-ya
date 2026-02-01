@@ -43,7 +43,7 @@ const CodigosDescuento = () => {
       queryClient.invalidateQueries({ queryKey: ['promoCodes', id] });
       setShowForm(false);
       setForm({ code: '', discountType: 'PERCENT', discountValue: '', maxUses: '', validFrom: '', validUntil: '' });
-      toast({ title: 'C?digo creado' });
+      toast({ title: 'Código creado' });
     },
     onError: (err: any) => toast({ title: 'Error', description: err.message, variant: 'destructive' }),
   });
@@ -52,7 +52,7 @@ const CodigosDescuento = () => {
     mutationFn: (promoId: string) => adminApi.deletePromoCode(id!, promoId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['promoCodes', id] });
-      toast({ title: 'C?digo eliminado' });
+      toast({ title: 'Código eliminado' });
     },
     onError: (err: any) => toast({ title: 'Error', description: err.message, variant: 'destructive' }),
   });
@@ -62,7 +62,7 @@ const CodigosDescuento = () => {
   const handleCreate = (e: React.FormEvent) => {
     e.preventDefault();
     if (!form.code.trim()) {
-      toast({ title: 'El c?digo es requerido', variant: 'destructive' });
+      toast({ title: 'El código es requerido', variant: 'destructive' });
       return;
     }
     if (!form.discountValue || parseFloat(form.discountValue) <= 0) {
@@ -91,27 +91,27 @@ const CodigosDescuento = () => {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Tag className="w-6 h-6 text-emerald-600" />
-              C?digos de descuento
+              Códigos de descuento
             </CardTitle>
             <CardDescription>
-              C?digos promocionales: % o monto fijo, cupo limitado, vigencia. Ideal para influencers, preventas o alianzas.
+              Códigos promocionales: % o monto fijo, cupo limitado, vigencia. Ideal para influencers, preventas o alianzas.
             </CardDescription>
           </CardHeader>
           <CardContent>
             <Button onClick={() => setShowForm(true)} className="mb-4">
               <Plus className="w-4 h-4 mr-2" />
-              Nuevo c?digo
+              Nuevo código
             </Button>
             {isLoading ? (
               <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
             ) : promoCodes.length === 0 ? (
-              <p className="text-muted-foreground py-8">No hay c?digos creados. Cre? uno para empezar.</p>
+              <p className="text-muted-foreground py-8">No hay códigos creados. Creá uno para empezar.</p>
             ) : (
               <div className="border rounded-lg overflow-hidden">
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="bg-muted/50">
-                      <th className="text-left py-3 px-4">C?digo</th>
+                      <th className="text-left py-3 px-4">Código</th>
                       <th className="text-left py-3 px-4">Tipo</th>
                       <th className="text-left py-3 px-4">Valor</th>
                       <th className="text-left py-3 px-4">Usos</th>
@@ -158,11 +158,11 @@ const CodigosDescuento = () => {
       <Dialog open={showForm} onOpenChange={setShowForm}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Nuevo c?digo de descuento</DialogTitle>
+            <DialogTitle>Nuevo código de descuento</DialogTitle>
           </DialogHeader>
           <form onSubmit={handleCreate} className="space-y-4">
             <div>
-              <Label>C?digo *</Label>
+              <Label>Código *</Label>
               <Input
                 value={form.code}
                 onChange={(e) => setForm({ ...form, code: e.target.value.toUpperCase() })}
@@ -193,7 +193,7 @@ const CodigosDescuento = () => {
               />
             </div>
             <div>
-              <Label>Cupo m?ximo (0 = ilimitado)</Label>
+              <Label>Cupo máximo (0 = ilimitado)</Label>
               <Input
                 type="number"
                 min="0"
@@ -203,7 +203,7 @@ const CodigosDescuento = () => {
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <Label>V?lido desde</Label>
+                <Label>Válido desde</Label>
                 <Input
                   type="datetime-local"
                   value={form.validFrom}
@@ -211,7 +211,7 @@ const CodigosDescuento = () => {
                 />
               </div>
               <div>
-                <Label>V?lido hasta</Label>
+                <Label>Válido hasta</Label>
                 <Input
                   type="datetime-local"
                   value={form.validUntil}
