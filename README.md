@@ -64,6 +64,25 @@ This project is built with:
 
 Simply open [Lovable](https://lovable.dev/projects/733824ce-4720-4ba1-85ef-a212f956c220) and click on Share -> Publish.
 
+## Configuración para Netlify
+
+El proyecto está configurado para desplegarse en Netlify y conectarse a un backend a través de ngrok.
+
+### Variables de Entorno
+
+La URL del backend está configurada en `netlify.toml` como variable de entorno de build:
+- `VITE_API_URL`: URL del backend (actualmente: `https://2cd25ca021f0.ngrok-free.app/api`)
+
+**Nota importante**: Si la URL de ngrok cambia, actualiza la variable `VITE_API_URL` en:
+1. El archivo `netlify.toml` (para el build)
+2. El dashboard de Netlify: Site settings > Environment variables (recomendado para valores que cambian frecuentemente)
+
+### Backend
+
+El backend debe estar corriendo y accesible a través de ngrok. Asegúrate de que:
+- El backend esté configurado para permitir CORS desde dominios de Netlify (ya configurado)
+- La URL de ngrok sea estable o actualices la variable de entorno cuando cambie
+
 ## Can I connect a custom domain to my Lovable project?
 
 Yes, you can!

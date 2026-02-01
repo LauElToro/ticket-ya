@@ -141,8 +141,8 @@ const EventsList = () => {
                           onClick={() => navigate(`/admin/events/${event.id}`)}
                         >
                           <Eye className="w-3 h-3 sm:w-4 sm:h-4 mr-1" />
-                          <span className="hidden sm:inline">Estadísticas</span>
-                          <span className="sm:hidden">Stats</span>
+                          <span className="hidden sm:inline">Gestionar</span>
+                          <span className="sm:hidden">Ver</span>
                         </Button>
                         <Button
                           variant="outline"

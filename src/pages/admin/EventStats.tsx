@@ -163,11 +163,11 @@ const EventStats = () => {
           <div className="mb-6">
             <Button 
               variant="ghost" 
-              onClick={() => navigate('/admin/events')}
+              onClick={() => navigate(`/admin/events/${id}`)}
               className="hover:bg-secondary/10"
             >
               <ArrowLeft className="w-4 h-4 mr-2" />
-              Volver a Eventos
+              Volver al Evento
             </Button>
           </div>
 
