@@ -4,6 +4,7 @@ import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
 import { adminApi } from '@/lib/api';
 import { GiftModal } from '@/components/admin/GiftModal';
+import { EventLinkModal } from '@/components/admin/EventLinkModal';
 import {
   Settings,
   Globe,
@@ -25,7 +26,6 @@ import {
   Loader2,
   ShoppingBag,
 } from 'lucide-react';
-import { toast } from '@/hooks/use-toast';
 import { useState } from 'react';
 
 interface ActionItem {
@@ -41,6 +41,7 @@ const EventDashboard = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const [showGiftModal, setShowGiftModal] = useState(false);
+  const [showLinkModal, setShowLinkModal] = useState(false);
 
   const { data, isLoading, error } = useQuery({
     queryKey: ['event-stats', id],
@@ -73,12 +74,6 @@ const EventDashboard = () => {
     ? `${window.location.origin}/evento/${event.id}${event.privateLink ? `?link=${event.privateLink}` : ''}`
     : '';
 
-  const copyEventLink = () => {
-    if (eventLink) {
-      navigator.clipboard.writeText(eventLink);
-      toast({ title: 'Link copiado al portapapeles' });
-    }
-  };
 
   const nav = (path: string) => () => navigate(path);
 
@@ -113,13 +108,13 @@ const EventDashboard = () => {
 
   const col1: ActionItem[] = [
     { label: 'Edita tu evento', icon: <Settings className={iconClass} />, onClick: nav(`/admin/events/${id}/edit`) },
-    { label: 'Link del evento', icon: <Globe className={iconClass} />, onClick: copyEventLink },
+    { label: 'Link del evento', icon: <Globe className={iconClass} />, onClick: () => setShowLinkModal(true) },
     { label: 'Activar Planimetría', icon: <LayoutGrid className={iconClass} />, path: 'planimetria' },
     { label: 'Funciones del Evento', icon: <Grid2X2 className={iconClass} />, path: 'funciones' },
-    { label: 'Clonar Evento', icon: <CopyPlus className={iconClass} />, path: 'clonar' },
+    { label: 'Clonar Evento', icon: <CopyPlus className={iconClass} />, onClick: nav(`/admin/events/${id}/clonar`) },
     { label: 'Edita y administra tus eTickets', icon: <Ticket className={iconClass} />, onClick: nav(`/admin/events/${id}/edit`) },
     { label: 'Edita y administra tus consumos', icon: <ShoppingCart className={iconClass} />, path: 'consumos' },
-    { label: 'Códigos Descuentos', icon: <Tag className={iconClass} />, path: 'descuentos' },
+    { label: 'Códigos Descuentos', icon: <Tag className={iconClass} />, onClick: nav(`/admin/events/${id}/descuentos`) },
     { label: 'Galería de Imágenes', icon: <ImageIcon className={iconClass} />, onClick: nav(`/admin/events/${id}/edit`) },
   ];
 
@@ -141,7 +136,7 @@ const EventDashboard = () => {
     { label: 'Informe de Ventas', icon: <FileText className={iconClass} />, onClick: nav('/admin/metrics') },
     { label: 'Liquidación de Evento', icon: <FileDown className={iconClass} />, path: 'liquidacion' },
     { label: 'Acreditar', icon: <LayoutGrid className={iconClass} />, path: 'acreditar' },
-    { label: 'Resumen de acreditación', icon: <ClipboardList className={iconClass} />, path: 'resumen-acreditacion' },
+    { label: 'Resumen de acreditación', icon: <ClipboardList className={iconClass} />, onClick: nav(`/admin/events/${id}/resumen-acreditacion`) },
     { label: 'Visitas', icon: <PieChart className={iconClass} />, onClick: nav('/admin/metrics') },
     { label: 'Pixel de Meta', icon: <PieChart className={iconClass} />, onClick: nav('/admin/tracking') },
     { label: 'Pixel de TikTok', icon: <PieChart className={iconClass} />, path: 'pixel-tiktok' },
@@ -215,6 +210,13 @@ const EventDashboard = () => {
       </div>
       {showGiftModal && id && (
         <GiftModal eventId={id} onClose={() => setShowGiftModal(false)} />
+      )}
+      {showLinkModal && (
+        <EventLinkModal
+          open={showLinkModal}
+          onOpenChange={setShowLinkModal}
+          eventLink={eventLink}
+        />
       )}
       <Footer />
     </div>

@@ -50,9 +50,27 @@ const Metrics = () => {
     });
   }, [dashboard?.topEvents, accountingConfig]);
 
+  // Preparar datos de eventos con contabilidad para gráficos (hook debe estar antes del return condicional)
+  const topEventsData = useMemo(() => {
+    if (!dashboard?.topEvents || dashboard.topEvents.length === 0) return [];
+    return dashboard.topEvents.slice(0, 10).map((event: any) => {
+      const revenue = Number(event.revenue) || 0;
+      const accounting = calculateAccounting(revenue, accountingConfig);
+      return {
+        name: event.title.length > 25 ? event.title.substring(0, 25) + '...' : event.title,
+        fullTitle: event.title,
+        tickets: event._count?.tickets || 0,
+        revenue: revenue,
+        costs: accounting.totalCosts,
+        grossProfit: accounting.grossProfit,
+        netProfit: accounting.netProfit,
+      };
+    });
+  }, [dashboard?.topEvents, accountingConfig]);
+
   if (isLoading) {
-  return (
-    <div className="min-h-screen bg-background transition-colors duration-300">
+    return (
+      <div className="min-h-screen bg-background transition-colors duration-300">
         <Header />
         <main className="pt-24 pb-16">
           <div className="container mx-auto px-4">
@@ -79,24 +97,6 @@ const Metrics = () => {
       netProfit: accounting.netProfit,
     };
   }) || [];
-
-  // Preparar datos de eventos con contabilidad para gráficos
-  const topEventsData = useMemo(() => {
-    if (!dashboard?.topEvents || dashboard.topEvents.length === 0) return [];
-    return dashboard.topEvents.slice(0, 10).map((event: any) => {
-      const revenue = Number(event.revenue) || 0;
-      const accounting = calculateAccounting(revenue, accountingConfig);
-      return {
-        name: event.title.length > 25 ? event.title.substring(0, 25) + '...' : event.title,
-        fullTitle: event.title,
-        tickets: event._count?.tickets || 0,
-        revenue: revenue,
-        costs: accounting.totalCosts,
-        grossProfit: accounting.grossProfit,
-        netProfit: accounting.netProfit,
-      };
-    });
-  }, [dashboard?.topEvents, accountingConfig]);
 
   const categoryDistribution = dashboard?.events?.reduce((acc: any, event: any) => {
     const category = event.category || 'Sin categoría';

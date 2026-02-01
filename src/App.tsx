@@ -22,12 +22,13 @@ import EventsList from "./pages/admin/EventsList";
 import EventForm from "./pages/admin/EventForm";
 import EventStats from "./pages/admin/EventStats";
 import EventDashboard from "./pages/admin/EventDashboard";
+import CloneEvent from "./pages/admin/CloneEvent";
+import ResumenAcreditacion from "./pages/admin/ResumenAcreditacion";
+import CodigosDescuento from "./pages/admin/CodigosDescuento";
 import {
   PlanimetriaPage,
   FuncionesPage,
-  ClonarEventoPage,
   ConsumosPage,
-  CodigosDescuentoPage,
   GaleriaPage,
   TicketsFisicosPage,
   ListaDigitalPage,
@@ -39,7 +40,6 @@ import {
   StatsConsumosPage,
   LiquidacionPage,
   AcreditarPage,
-  ResumenAcreditacionPage,
   PixelTikTokPage,
 } from "./pages/admin/PasslinePages";
 import Metrics from "./pages/admin/Metrics";
@@ -135,9 +135,9 @@ const App = () => (
             />
             <Route path="/admin/events/:id/planimetria" element={<ProtectedRoute requireOrganizer><PlanimetriaPage /></ProtectedRoute>} />
             <Route path="/admin/events/:id/funciones" element={<ProtectedRoute requireOrganizer><FuncionesPage /></ProtectedRoute>} />
-            <Route path="/admin/events/:id/clonar" element={<ProtectedRoute requireOrganizer><ClonarEventoPage /></ProtectedRoute>} />
+            <Route path="/admin/events/:id/clonar" element={<ProtectedRoute requireOrganizer><CloneEvent /></ProtectedRoute>} />
             <Route path="/admin/events/:id/consumos" element={<ProtectedRoute requireOrganizer><ConsumosPage /></ProtectedRoute>} />
-            <Route path="/admin/events/:id/descuentos" element={<ProtectedRoute requireOrganizer><CodigosDescuentoPage /></ProtectedRoute>} />
+            <Route path="/admin/events/:id/descuentos" element={<ProtectedRoute requireOrganizer><CodigosDescuento /></ProtectedRoute>} />
             <Route path="/admin/events/:id/galeria" element={<ProtectedRoute requireOrganizer><GaleriaPage /></ProtectedRoute>} />
             <Route path="/admin/events/:id/tickets-fisicos" element={<ProtectedRoute requireOrganizer><TicketsFisicosPage /></ProtectedRoute>} />
             <Route path="/admin/events/:id/lista-digital" element={<ProtectedRoute requireOrganizer><ListaDigitalPage /></ProtectedRoute>} />
@@ -149,7 +149,7 @@ const App = () => (
             <Route path="/admin/events/:id/stats-consumos" element={<ProtectedRoute requireOrganizer><StatsConsumosPage /></ProtectedRoute>} />
             <Route path="/admin/events/:id/liquidacion" element={<ProtectedRoute requireOrganizer><LiquidacionPage /></ProtectedRoute>} />
             <Route path="/admin/events/:id/acreditar" element={<ProtectedRoute requireOrganizer><AcreditarPage /></ProtectedRoute>} />
-            <Route path="/admin/events/:id/resumen-acreditacion" element={<ProtectedRoute requireOrganizer><ResumenAcreditacionPage /></ProtectedRoute>} />
+            <Route path="/admin/events/:id/resumen-acreditacion" element={<ProtectedRoute requireOrganizer><ResumenAcreditacion /></ProtectedRoute>} />
             <Route path="/admin/events/:id/pixel-tiktok" element={<ProtectedRoute requireOrganizer><PixelTikTokPage /></ProtectedRoute>} />
             <Route
               path="/admin/metrics"

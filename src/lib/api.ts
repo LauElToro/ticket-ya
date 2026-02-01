@@ -284,6 +284,21 @@ export const adminApi = {
   getEventById: (id: string) =>
     api.get<{ success: boolean; data: any }>(`/admin/events/${id}`),
   
+  cloneEvent: (id: string) =>
+    api.post<{ success: boolean; data: any; message: string }>(`/admin/events/${id}/clone`),
+  
+  getEventValidations: (id: string) =>
+    api.get<{ success: boolean; data: any[] }>(`/admin/events/${id}/validations`),
+  
+  getPromoCodes: (eventId: string) =>
+    api.get<{ success: boolean; data: any[] }>(`/admin/events/${eventId}/promoCodes`),
+  createPromoCode: (eventId: string, data: any) =>
+    api.post<{ success: boolean; data: any }>(`/admin/events/${eventId}/promoCodes`, data),
+  updatePromoCode: (eventId: string, promoId: string, data: any) =>
+    api.put<{ success: boolean; data: any }>(`/admin/events/${eventId}/promoCodes/${promoId}`, data),
+  deletePromoCode: (eventId: string, promoId: string) =>
+    api.delete<{ success: boolean }>(`/admin/events/${eventId}/promoCodes/${promoId}`),
+  
   createEvent: (data: any) =>
     api.post<{ success: boolean; data: any }>('/admin/events', data),
   
