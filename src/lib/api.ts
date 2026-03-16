@@ -308,9 +308,25 @@ export const adminApi = {
   deleteEvent: (id: string) =>
     api.delete<{ success: boolean }>(`/admin/events/${id}`),
   
+  createTicketType: (eventId: string, data: any) =>
+    api.post<{ success: boolean; data: any }>(`/admin/events/${eventId}/ticket-types`, data),
+  updateTicketType: (eventId: string, ticketTypeId: string, data: any) =>
+    api.put<{ success: boolean; data: any }>(`/admin/events/${eventId}/ticket-types/${ticketTypeId}`, data),
+  
   getEventStats: (eventId: string) =>
     api.get<{ success: boolean; data: any }>(`/admin/stats/events/${eventId}`),
-  
+  getEventSalesDetails: (eventId: string, params?: { rrpp?: string; tipo?: string; estado?: string; email?: string }) => {
+    const q = new URLSearchParams();
+    if (params?.rrpp) q.set('rrpp', params.rrpp);
+    if (params?.tipo) q.set('tipo', params.tipo);
+    if (params?.estado) q.set('estado', params.estado);
+    if (params?.email) q.set('email', params.email);
+    const query = q.toString();
+    return api.get<{ success: boolean; data: { tickets: any[]; summary: any; promotores: any[]; ticketTypes: any[]; event: any } }>(
+      `/admin/events/${eventId}/sales-details${query ? `?${query}` : ''}`
+    );
+  },
+
   getUsers: (params?: { role?: string; assignedBy?: string; page?: number; limit?: number }) => {
     const query = new URLSearchParams();
     if (params) {
@@ -378,7 +394,17 @@ export const adminApi = {
     const query = assignedBy ? `?assignedBy=${assignedBy}` : '';
     return api.get<{ success: boolean; data: any }>(`/admin/porteros${query}`);
   },
-  
+  getEventPorteros: (eventId: string) =>
+    api.get<{ success: boolean; data: any[] }>(`/admin/events/${eventId}/porteros`),
+  addPorteroToEvent: (eventId: string, data: { name: string; email: string; phone?: string }) =>
+    api.post<{ success: boolean; data: { portero: any; password: string } }>(`/admin/events/${eventId}/porteros`, data),
+  removePorteroFromEvent: (eventId: string, porteroId: string) =>
+    api.delete<{ success: boolean }>(`/admin/events/${eventId}/porteros/${porteroId}`),
+  getPorteroResumen: (eventId: string, porteroId: string) =>
+    api.get<{ success: boolean; data: any[] }>(`/admin/events/${eventId}/porteros/${porteroId}/resumen`),
+  getEventAccreditationSummary: (eventId: string) =>
+    api.get<{ success: boolean; data: { event: any; eTickets: any[]; totalETickets: any; consumos: any[]; totalConsumos: any; ticketsFisicos: any[]; totalTicketsFisicos: any } }>(`/admin/events/${eventId}/accreditation-summary`),
+
   giftTicketsByEmail: (data: {
     eventId: string;
     ticketTypeId: string;
@@ -391,6 +417,70 @@ export const adminApi = {
   
   assignEventToVendedor: (data: { vendedorId: string; eventId: string; ticketLimit?: number }) =>
     api.post<{ success: boolean; data: any }>('/vendedores/assign-event', data),
+  getEventPromotores: (eventId: string) =>
+    api.get<{ success: boolean; data: { event: any; promotores: any[] } }>(`/admin/events/${eventId}/promotores`),
+  addPromotorToEvent: (eventId: string, data: { name: string; email: string; phone?: string }) =>
+    api.post<{ success: boolean; data: any }>(`/admin/events/${eventId}/promotores`, data),
+  setPromotorActive: (eventId: string, vendedorId: string, isActive: boolean) =>
+    api.patch<{ success: boolean; data: any }>(`/admin/events/${eventId}/promotores/${vendedorId}/active`, { isActive }),
+  activateAllPromotores: (eventId: string) =>
+    api.post<{ success: boolean; data: any }>(`/admin/events/${eventId}/promotores/activate-all`),
+  deactivateAllPromotores: (eventId: string) =>
+    api.post<{ success: boolean; data: any }>(`/admin/events/${eventId}/promotores/deactivate-all`),
+  exportEventPromotoresExcel: async (eventId: string) => {
+    const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+    const response = await fetch(`${API_URL}/admin/events/${eventId}/promotores/export`, {
+      method: 'GET',
+      headers: { 'Authorization': `Bearer ${token}` },
+    });
+    if (!response.ok) throw new Error('Error al exportar');
+    const blob = await response.blob();
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `promotores-${eventId}-${new Date().toISOString().split('T')[0]}.xlsx`;
+    document.body.appendChild(a);
+    a.click();
+    window.URL.revokeObjectURL(url);
+    document.body.removeChild(a);
+  },
+  importEventPromotores: (eventId: string, items: Array<{ name: string; email: string; phone?: string }>) =>
+    api.post<{ success: boolean; data: { results: any[] } }>(`/admin/events/${eventId}/promotores/import`, items),
+
+  getCortesiaBases: (eventId: string) =>
+    api.get<{ success: boolean; data: Array<{ id: string; name: string; quantity: number; createdAt: string }> }>(`/admin/events/${eventId}/cortesias-bases`),
+  createCortesiaBase: (eventId: string, data: { name: string; rows: Array<{ name: string; email: string }> }) =>
+    api.post<{ success: boolean; data: any }>(`/admin/events/${eventId}/cortesias-bases`, data),
+  getCortesiaBase: (eventId: string, baseId: string) =>
+    api.get<{ success: boolean; data: { id: string; name: string; rows: Array<{ name: string; email: string }>; createdAt: string } }>(`/admin/events/${eventId}/cortesias-bases/${baseId}`),
+  deleteCortesiaBase: (eventId: string, baseId: string) =>
+    api.delete<{ success: boolean }>(`/admin/events/${eventId}/cortesias-bases/${baseId}`),
+  downloadCortesiaBase: async (eventId: string, baseId: string, filename: string) => {
+    const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+    const response = await fetch(`${API_URL}/admin/events/${eventId}/cortesias-bases/${baseId}/download`, {
+      method: 'GET',
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (!response.ok) throw new Error('Error al descargar');
+    const blob = await response.blob();
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${filename || 'base'}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    window.URL.revokeObjectURL(url);
+    document.body.removeChild(a);
+  },
+  sendCortesiasFromBase: (eventId: string, data: {
+    baseId: string;
+    ticketTypeId: string;
+    quantityPerRecipient?: number;
+    authorizationCode?: string;
+    validUntil?: string;
+    validUntilTime?: string;
+  }) =>
+    api.post<{ success: boolean; data: { sent: number; failed: number; total: number; results: any[]; message: string } }>(`/admin/events/${eventId}/cortesias-bases/send`, data),
   
   getTrackingConfig: () =>
     api.get<{ success: boolean; data: { metaPixelId: string | null; googleAdsId: string | null } }>('/admin/tracking-config'),
@@ -620,8 +710,10 @@ export const paymentApi = {
 };
 
 export const porteroApi = {
-  scanTicket: (qrCode: string) =>
-    api.post<{ success: boolean; data: { isValid: boolean; reason?: string; ticket?: any } }>('/porteros/scan', { qrCode }),
+  validateEvent: (code: string, key: string) =>
+    api.post<{ success: boolean; data: { eventId: string; title: string } }>('/porteros/validate-event', { code, key }),
+  scanTicket: (qrCode: string, eventId?: string) =>
+    api.post<{ success: boolean; data: { isValid: boolean; reason?: string; ticket?: any } }>('/porteros/scan', { qrCode, eventId }),
   getScanHistory: (limit?: number) => {
     const query = limit ? `?limit=${limit}` : '';
     return api.get<{ success: boolean; data: any[] }>(`/porteros/history${query}`);

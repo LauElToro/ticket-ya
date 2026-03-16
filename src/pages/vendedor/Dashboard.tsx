@@ -1,25 +1,15 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Copy, ExternalLink, TrendingUp, Users, Ticket, DollarSign, Loader2, Edit2, Check, X, Calendar } from 'lucide-react';
+import { Copy, TrendingUp, Ticket, DollarSign, Loader2, Calendar, Mail } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { vendedorApi } from '@/lib/api';
 import { toast } from '@/hooks/use-toast';
-import { cn } from '@/lib/utils';
 
 const Dashboard = () => {
   const { user } = useAuth();
-  const queryClient = useQueryClient();
-  const [editingReferido, setEditingReferido] = useState<string | null>(null);
-  const [newCode, setNewCode] = useState('');
-  const [showEditAllDialog, setShowEditAllDialog] = useState(false);
-  const [allCodesValue, setAllCodesValue] = useState('');
 
   const { data: dashboardData, isLoading } = useQuery({
     queryKey: ['vendedor-dashboard', user?.id],
@@ -27,105 +17,14 @@ const Dashboard = () => {
     enabled: !!user,
   });
 
-  const updateReferidoMutation = useMutation({
-    mutationFn: ({ referidoId, customCode }: { referidoId: string; customCode: string }) =>
-      vendedorApi.updateReferidoCode(referidoId, customCode),
-    onSuccess: () => {
-      toast({
-        title: '✅ Código actualizado',
-        description: 'El código de referido ha sido actualizado exitosamente.',
-      });
-      queryClient.invalidateQueries({ queryKey: ['vendedor-dashboard', user?.id] });
-      setEditingReferido(null);
-      setNewCode('');
-    },
-    onError: (error: any) => {
-      toast({
-        title: 'Error',
-        description: error.message || 'No se pudo actualizar el código.',
-        variant: 'destructive',
-      });
-    },
-  });
-
-  const updateAllCodesMutation = useMutation({
-    mutationFn: (customCode: string) => vendedorApi.updateAllReferidoCodes(customCode),
-    onSuccess: () => {
-      toast({
-        title: '✅ Códigos actualizados',
-        description: 'Todos los códigos de referido han sido actualizados exitosamente.',
-      });
-      queryClient.invalidateQueries({ queryKey: ['vendedor-dashboard', user?.id] });
-      setShowEditAllDialog(false);
-      setAllCodesValue('');
-    },
-    onError: (error: any) => {
-      toast({
-        title: 'Error',
-        description: error.message || 'No se pudieron actualizar los códigos.',
-        variant: 'destructive',
-      });
-    },
-  });
-
-  const syncReferidosMutation = useMutation({
-    mutationFn: () => vendedorApi.syncReferidos(),
-    onSuccess: () => {
-      toast({
-        title: '✅ Links sincronizados',
-        description: 'Se han generado los links de referido para todos tus eventos asignados.',
-      });
-      queryClient.invalidateQueries({ queryKey: ['vendedor-dashboard', user?.id] });
-    },
-    onError: (error: any) => {
-      toast({
-        title: 'Error',
-        description: error.message || 'No se pudieron sincronizar los links.',
-        variant: 'destructive',
-      });
-    },
-  });
-
   const handleCopyLink = (url: string) => {
     navigator.clipboard.writeText(url);
-    toast({
-      title: '✅ Link copiado',
-      description: 'El link de referido ha sido copiado al portapapeles.',
-    });
-  };
-
-  const handleEditReferido = (referido: any) => {
-    setEditingReferido(referido.id);
-    setNewCode(referido.customCode);
-  };
-
-  const handleSaveReferido = (referidoId: string) => {
-    if (!newCode.trim()) {
-      toast({
-        title: 'Error',
-        description: 'El código no puede estar vacío.',
-        variant: 'destructive',
-      });
-      return;
-    }
-    updateReferidoMutation.mutate({ referidoId, customCode: newCode.trim() });
-  };
-
-  const handleSaveAllCodes = () => {
-    if (!allCodesValue.trim()) {
-      toast({
-        title: 'Error',
-        description: 'El código no puede estar vacío.',
-        variant: 'destructive',
-      });
-      return;
-    }
-    updateAllCodesMutation.mutate(allCodesValue.trim());
+    toast({ title: 'Link copiado', description: 'Copiado al portapapeles.' });
   };
 
   if (isLoading) {
-  return (
-    <div className="min-h-screen bg-background transition-colors duration-300">
+    return (
+      <div className="min-h-screen bg-background transition-colors duration-300">
         <Header />
         <main className="pt-24 pb-16">
           <div className="container mx-auto px-4">
@@ -138,6 +37,7 @@ const Dashboard = () => {
       </div>
     );
   }
+
 
   const metrics = dashboardData?.data?.metrics || {
     totalSales: 0,
@@ -403,160 +303,47 @@ const Dashboard = () => {
             )}
           </div>
 
-          {/* Links de referido - Mejorado */}
+          {/* Links de referido: solo lectura. El organizador envía el link por email al activar. */}
           <div>
-            <div className="flex items-center justify-between mb-6">
-              <div className="flex items-center gap-3">
-                <div className="w-1 h-8 bg-gradient-to-b from-secondary to-primary rounded-full"></div>
-                <h2 className="text-3xl font-bold">Links de Referido</h2>
-              </div>
-              <div className="flex items-center gap-3">
-                {referidos.length === 0 && events.length > 0 && (
-                  <Button 
-                    onClick={() => syncReferidosMutation.mutate()} 
-                    variant="default"
-                    size="lg"
-                    disabled={syncReferidosMutation.isPending}
-                    className="bg-secondary hover:bg-secondary/90 transition-all duration-300"
-                  >
-                    {syncReferidosMutation.isPending ? (
-                      <>
-                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                        Sincronizando...
-                      </>
-                    ) : (
-                      <>
-                        <Copy className="w-4 h-4 mr-2" />
-                        Generar Links
-                      </>
-                    )}
-                  </Button>
-                )}
-                {referidos.length > 0 && (
-                  <Button 
-                    onClick={() => setShowEditAllDialog(true)} 
-                    variant="outline" 
-                    size="lg"
-                    className="border-2 hover:border-secondary hover:bg-secondary/5 transition-all duration-300"
-                  >
-                    <Edit2 className="w-4 h-4 mr-2" />
-                    Personalizar todos
-                  </Button>
-                )}
-              </div>
+            <div className="flex items-center gap-3 mb-6">
+              <div className="w-1 h-8 bg-gradient-to-b from-secondary to-primary rounded-full"></div>
+              <h2 className="text-3xl font-bold">Tus links de referido</h2>
             </div>
+            <Card className="border-2 border-dashed mb-6">
+              <CardContent className="py-6">
+                <div className="flex items-start gap-3">
+                  <Mail className="w-6 h-6 text-secondary flex-shrink-0 mt-0.5" />
+                  <div>
+                    <p className="font-medium">Los links de referido te los envía el organizador</p>
+                    <p className="text-muted-foreground text-sm mt-1">
+                      Cuando el organizador te active como promotor, recibirás tu link de referido por email. También podés copiarlo desde esta sección una vez que estés activo.
+                    </p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
             {referidos.length > 0 ? (
               <div className="space-y-6">
                 {referidos.map((referido: any) => (
-                  <Card key={referido.id} className="border-2 shadow-lg hover:shadow-xl transition-all duration-300 bg-gradient-to-br from-card to-card/80">
+                  <Card key={referido.id} className="border-2 shadow-lg bg-gradient-to-br from-card to-card/80">
                     <CardContent className="p-6">
-                      <div className="flex items-start justify-between gap-4">
-                        <div className="flex-1">
-                          <div className="flex items-center gap-3 mb-4">
-                            <div className="p-2 rounded-lg bg-secondary/10">
-                              <Ticket className="h-5 w-5 text-secondary" />
-                            </div>
-                            <h3 className="font-bold text-lg">{referido.event.title}</h3>
-                          </div>
-                          <div className="space-y-4">
-                            {editingReferido === referido.id ? (
-                              <div className="flex items-center gap-2">
-                                <Input
-                                  value={newCode}
-                                  onChange={(e) => setNewCode(e.target.value)}
-                                  placeholder="Código personalizado"
-                                  className="flex-1 border-2"
-                                />
-                                <Button
-                                  size="sm"
-                                  onClick={() => handleSaveReferido(referido.id)}
-                                  disabled={updateReferidoMutation.isPending}
-                                  className="bg-secondary hover:bg-secondary/90"
-                                >
-                                  {updateReferidoMutation.isPending ? (
-                                    <Loader2 className="w-4 h-4 animate-spin" />
-                                  ) : (
-                                    <Check className="w-4 h-4" />
-                                  )}
-                                </Button>
-                                <Button
-                                  size="sm"
-                                  variant="ghost"
-                                  onClick={() => {
-                                    setEditingReferido(null);
-                                    setNewCode('');
-                                  }}
-                                >
-                                  <X className="w-4 h-4" />
-                                </Button>
-                              </div>
-                            ) : (
-                              <div className="space-y-3">
-                                <div className="flex items-center gap-2">
-                                  <div className="flex-1 p-3 bg-gradient-to-r from-muted/50 to-muted/30 rounded-lg border-2 border-border">
-                                    <p className="text-xs font-semibold text-muted-foreground mb-1">Código de Referido</p>
-                                    <code className="text-base font-bold text-foreground">{referido.customCode}</code>
-                                  </div>
-                                  <Button
-                                    size="sm"
-                                    variant="ghost"
-                                    onClick={() => {
-                                      navigator.clipboard.writeText(referido.customCode);
-                                      toast({
-                                        title: '✅ Código copiado',
-                                        description: 'El código de referido ha sido copiado al portapapeles.',
-                                      });
-                                    }}
-                                    className="hover:bg-secondary/10"
-                                  >
-                                    <Copy className="w-4 h-4" />
-                                  </Button>
-                                  <Button
-                                    size="sm"
-                                    variant="ghost"
-                                    onClick={() => handleEditReferido(referido)}
-                                    className="hover:bg-secondary/10"
-                                  >
-                                    <Edit2 className="w-4 h-4" />
-                                  </Button>
-                                </div>
-                                <div className="flex items-center gap-2">
-                                  <Input
-                                    value={referido.customUrl}
-                                    readOnly
-                                    className="flex-1 font-mono text-sm border-2 bg-muted/50"
-                                  />
-                                  <Button
-                                    size="sm"
-                                    variant="outline"
-                                    onClick={() => handleCopyLink(referido.customUrl)}
-                                    className="border-2 hover:border-secondary hover:bg-secondary/5"
-                                  >
-                                    <Copy className="w-4 h-4 mr-2" />
-                                    Copiar Link
-                                  </Button>
-                                  <Button
-                                    size="sm"
-                                    variant="outline"
-                                    onClick={() => window.open(referido.customUrl, '_blank')}
-                                    className="border-2 hover:border-secondary hover:bg-secondary/5"
-                                  >
-                                    <ExternalLink className="w-4 h-4" />
-                                  </Button>
-                                </div>
-                              </div>
-                            )}
-                            <div className="flex gap-6 p-3 rounded-lg bg-muted/50">
-                              <div className="flex items-center gap-2">
-                                <span className="text-sm font-semibold text-muted-foreground">Clics:</span>
-                                <span className="text-base font-bold">{referido.clickCount}</span>
-                              </div>
-                              <div className="flex items-center gap-2">
-                                <span className="text-sm font-semibold text-muted-foreground">Conversiones:</span>
-                                <span className="text-base font-bold text-secondary">{referido.conversionCount}</span>
-                              </div>
-                            </div>
-                          </div>
+                      <div className="flex items-center gap-3 mb-4">
+                        <div className="p-2 rounded-lg bg-secondary/10">
+                          <Ticket className="h-5 w-5 text-secondary" />
+                        </div>
+                        <h3 className="font-bold text-lg">{referido.event.title}</h3>
+                      </div>
+                      <div className="space-y-3">
+                        <div className="flex items-center gap-2">
+                          <code className="flex-1 p-3 bg-muted/50 rounded-lg text-sm font-mono">{referido.customUrl}</code>
+                          <Button size="sm" variant="outline" onClick={() => handleCopyLink(referido.customUrl)}>
+                            <Copy className="w-4 h-4 mr-2" />
+                            Copiar
+                          </Button>
+                        </div>
+                        <div className="flex gap-6 p-3 rounded-lg bg-muted/50 text-sm">
+                          <span><strong>Clics:</strong> {referido.clickCount}</span>
+                          <span className="text-secondary font-medium"><strong>Conversiones:</strong> {referido.conversionCount}</span>
                         </div>
                       </div>
                     </CardContent>
@@ -564,85 +351,11 @@ const Dashboard = () => {
                 ))}
               </div>
             ) : (
-              <Card className="border-2 border-dashed">
-                <CardContent className="py-12 text-center">
-                  {events.length > 0 ? (
-                    <>
-                      <p className="text-muted-foreground text-lg mb-4">
-                        No tenés links de referido aún. Hacé clic en "Generar Links" para crearlos automáticamente.
-                      </p>
-                      <Button 
-                        onClick={() => syncReferidosMutation.mutate()} 
-                        variant="default"
-                        size="lg"
-                        disabled={syncReferidosMutation.isPending}
-                        className="bg-secondary hover:bg-secondary/90"
-                      >
-                        {syncReferidosMutation.isPending ? (
-                          <>
-                            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                            Generando...
-                          </>
-                        ) : (
-                          <>
-                            <Copy className="w-4 h-4 mr-2" />
-                            Generar Links de Referido
-                          </>
-                        )}
-                      </Button>
-                    </>
-                  ) : (
-                    <p className="text-muted-foreground text-lg">
-                      No tenés links de referido aún. Los links se generan automáticamente cuando se te asignan eventos.
-                    </p>
-                  )}
-                </CardContent>
-              </Card>
+              <p className="text-muted-foreground text-sm">Aún no tenés links asignados. El organizador te los enviará por email cuando te active.</p>
             )}
           </div>
         </div>
       </main>
-
-      {/* Dialog para personalizar todos los códigos */}
-      <Dialog open={showEditAllDialog} onOpenChange={setShowEditAllDialog}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Personalizar todos los códigos</DialogTitle>
-            <DialogDescription>
-              Este código se aplicará a todos tus links de referido.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4">
-            <div>
-              <Label htmlFor="allCodes">Código personalizado</Label>
-              <Input
-                id="allCodes"
-                value={allCodesValue}
-                onChange={(e) => setAllCodesValue(e.target.value)}
-                placeholder="Ej: MI-CODIGO"
-              />
-            </div>
-            <div className="flex justify-end gap-2">
-              <Button variant="outline" onClick={() => setShowEditAllDialog(false)}>
-                Cancelar
-              </Button>
-              <Button
-                onClick={handleSaveAllCodes}
-                disabled={updateAllCodesMutation.isPending}
-              >
-                {updateAllCodesMutation.isPending ? (
-                  <>
-                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                    Guardando...
-                  </>
-                ) : (
-                  'Guardar'
-                )}
-              </Button>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
 
       <Footer />
     </div>

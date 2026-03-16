@@ -74,27 +74,39 @@ const EventsList = () => {
           </div>
           <div className="mb-6 sm:mb-8 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
             <div className="min-w-0 flex-1">
-              <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold mb-2 break-words">Eventos</h1>
-              <p className="text-sm sm:text-base text-muted-foreground">Gestiona todos tus eventos</p>
+              <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold mb-2 break-words">Mis eventos</h1>
+              <p className="text-sm sm:text-base text-muted-foreground">En esta sección podrás editar tus eventos ya creados.</p>
             </div>
             <Button onClick={() => navigate('/admin/events/new')} className="w-full sm:w-auto flex-shrink-0">
               <Plus className="w-4 h-4 mr-2" />
-              <span className="hidden sm:inline">Nuevo Evento</span>
-              <span className="sm:hidden">Nuevo</span>
+              CREAR EVENTO
             </Button>
           </div>
 
-          {/* Búsqueda */}
-          <div className="mb-6">
-            <div className="relative">
+          {/* Búsqueda: Estado + Nombre o llave + BUSCAR */}
+          <div className="mb-6 flex flex-col sm:flex-row gap-3">
+            <select
+              className="h-10 rounded-md border border-input bg-background px-3 text-sm w-full sm:w-40"
+              defaultValue=""
+              aria-label="Estado"
+            >
+              <option value="">Estado</option>
+              <option value="active">Vigente</option>
+              <option value="paused">Pausado</option>
+              <option value="ended">Finalizado</option>
+            </select>
+            <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
               <Input
-                placeholder="Buscar eventos..."
+                placeholder="Nombre del evento o llave..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 className="pl-10"
               />
             </div>
+            <Button type="button" variant="secondary" className="sm:w-auto">
+              BUSCAR
+            </Button>
           </div>
 
           {/* Lista de eventos */}

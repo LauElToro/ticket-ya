@@ -22,9 +22,9 @@ import {
   FileDown,
   ClipboardList,
   PieChart,
-  ExternalLink,
   Loader2,
   ShoppingBag,
+  MinusCircle,
 } from 'lucide-react';
 import { useState } from 'react';
 
@@ -66,9 +66,14 @@ const EventDashboard = () => {
     if (!eventDate) return 'N/A';
     const now = new Date();
     if (eventDate < now) return 'Finalizado';
-    if (event?.isActive) return 'Activo';
+    if (event?.isActive) return 'Vigente';
     return 'Pausado';
   };
+
+  const codigo = event?.authorizationCode || id?.slice(-4) || '-';
+  const llave = event?.privateLink || id?.replace(/-/g, '').slice(-6) || id?.slice(-6) || '-';
+  const lugarPais = [event?.venue, event?.city].filter(Boolean).join(' - ');
+  const paisLine = event?.country || 'ARGENTINA';
 
   const eventLink = event
     ? `${window.location.origin}/evento/${event.id}${event.privateLink ? `?link=${event.privateLink}` : ''}`
@@ -112,7 +117,7 @@ const EventDashboard = () => {
     { label: 'Activar Planimetría', icon: <LayoutGrid className={iconClass} />, path: 'planimetria' },
     { label: 'Funciones del Evento', icon: <Grid2X2 className={iconClass} />, path: 'funciones' },
     { label: 'Clonar Evento', icon: <CopyPlus className={iconClass} />, onClick: nav(`/admin/events/${id}/clonar`) },
-    { label: 'Edita y administra tus eTickets', icon: <Ticket className={iconClass} />, onClick: nav(`/admin/events/${id}/edit`) },
+    { label: 'Edita y administra tus eTickets', icon: <Ticket className={iconClass} />, onClick: nav(`/admin/events/${id}/tickets`) },
     { label: 'Edita y administra tus consumos', icon: <ShoppingCart className={iconClass} />, path: 'consumos' },
     { label: 'Códigos Descuentos', icon: <Tag className={iconClass} />, onClick: nav(`/admin/events/${id}/descuentos`) },
     { label: 'Galería de Imágenes', icon: <ImageIcon className={iconClass} />, onClick: nav(`/admin/events/${id}/edit`) },
@@ -130,7 +135,7 @@ const EventDashboard = () => {
   ];
 
   const col3: ActionItem[] = [
-    { label: 'Tickets vendidos y cortesías enviadas', icon: <ShoppingBag className={iconClass} />, onClick: nav(`/admin/events/${id}/stats`) },
+    { label: 'Tickets vendidos y cortesías enviadas', icon: <ShoppingBag className={iconClass} />, onClick: nav(`/admin/events/${id}/sales-details`) },
     { label: 'Consumos vendidos y cortesías enviadas', icon: <ShoppingBag className={iconClass} />, path: 'stats-consumos' },
     { label: 'Resumen de Ventas', icon: <FileText className={iconClass} />, onClick: nav(`/admin/events/${id}/stats`) },
     { label: 'Informe de Ventas', icon: <FileText className={iconClass} />, onClick: nav('/admin/metrics') },
@@ -152,60 +157,114 @@ const EventDashboard = () => {
     <div className="min-h-screen bg-background">
       <Header />
       <div className="max-w-7xl mx-auto px-4 py-6 pt-24">
-        {/* Tabla superior - exacta como la imagen */}
+        <div className="mb-4">
+          <button
+            onClick={() => navigate('/admin/events')}
+            className="text-sm text-muted-foreground hover:text-foreground"
+          >
+            ← Mis eventos
+          </button>
+        </div>
+
+        {/* Tabla tipo Passline: una fila por evento con Configuración (nombre + acciones), Lugar/País, Código, Llave, Fecha, Aforo, Venta WEB, Estado */}
         <div className="border rounded-lg overflow-hidden mb-6">
           <table className="w-full">
             <thead>
               <tr className="bg-muted/50">
-                <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">Configuración Evento</th>
-                <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">Lugar / País</th>
-                <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">Código</th>
-                <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">Llave</th>
-                <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">Fecha evento</th>
-                <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">Aforo</th>
-                <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">Venta WEB</th>
-                <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">Estado</th>
+                <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground align-top w-[28%]">Configuración Evento</th>
+                <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground align-top">Lugar / País</th>
+                <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground align-top">Código</th>
+                <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground align-top">Llave</th>
+                <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground align-top">Fecha evento</th>
+                <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground align-top">Aforo</th>
+                <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground align-top">Venta WEB</th>
+                <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground align-top">Estado</th>
               </tr>
             </thead>
             <tbody>
               <tr className="border-t">
-                <td className="py-3 px-4 font-medium">{event.title}</td>
-                <td className="py-3 px-4">{event.venue} / {event.city}</td>
-                <td className="py-3 px-4 font-mono text-sm">{id?.slice(-4) || '-'}</td>
-                <td className="py-3 px-4 font-mono text-sm">{event.privateLink || '-'}</td>
-                <td className="py-3 px-4">
-                  {eventDate ? eventDate.toLocaleDateString('es-AR', {
-                    day: 'numeric',
-                    month: 'long',
-                    year: 'numeric',
-                    hour: '2-digit',
-                    minute: '2-digit',
-                  }) : '-'}
+                <td className="py-3 px-4 align-top">
+                  <div className="font-medium text-foreground mb-2">{event.title}</div>
+                  <div className="flex flex-col gap-1">
+                    {col1.map((item, i) => (
+                      <button
+                        key={i}
+                        type="button"
+                        onClick={() => handleAction(item)}
+                        className="flex items-center gap-2 text-left text-sm text-muted-foreground hover:text-foreground"
+                      >
+                        {item.icon}
+                        {item.label}
+                      </button>
+                    ))}
+                  </div>
                 </td>
-                <td className="py-3 px-4">{ticketsSold} de {totalCapacity}</td>
-                <td className="py-3 px-4">$ {new Intl.NumberFormat('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(revenue)}</td>
-                <td className="py-3 px-4">{getEventStatus()}</td>
+                <td className="py-3 px-4 align-top">
+                  <div>{lugarPais || '-'}</div>
+                  <div className="text-muted-foreground text-sm">{event?.organizer?.name || ''} / {paisLine}</div>
+                </td>
+                <td className="py-3 px-4 font-mono text-sm align-top">{codigo}</td>
+                <td className="py-3 px-4 font-mono text-sm align-top">{llave}</td>
+                <td className="py-3 px-4 align-top">
+                  {eventDate ? (
+                    <>
+                      <div>{eventDate.toLocaleDateString('es-AR', { day: 'numeric', month: 'long' })}</div>
+                      <div className="text-muted-foreground text-sm">{eventDate.getFullYear()} a las {eventDate.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' })}</div>
+                    </>
+                  ) : '-'}
+                </td>
+                <td className="py-3 px-4 align-top">{ticketsSold} de {totalCapacity}</td>
+                <td className="py-3 px-4 align-top">$ {new Intl.NumberFormat('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(revenue)}</td>
+                <td className="py-3 px-4 align-top">
+                  <div className="flex items-center gap-2">
+                    <span>{getEventStatus()}</span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (confirm('¿Desactivar este evento? No se mostrará en la cartelera.')) {
+                          navigate(`/admin/events/${id}/edit`);
+                        }
+                      }}
+                      className="p-0.5 rounded-full text-destructive hover:bg-destructive/10"
+                      title="Desactivar evento"
+                    >
+                      <MinusCircle className="w-4 h-4" />
+                    </button>
+                  </div>
+                </td>
               </tr>
             </tbody>
           </table>
         </div>
 
-        {/* Tres columnas de funcionalidades */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {[col1, col2, col3].map((col, colIdx) => (
-            <div key={colIdx} className="space-y-0">
-              {col.map((item, i) => (
-                <button
-                  key={i}
-                  onClick={() => handleAction(item)}
-                  className="w-full flex items-center gap-3 py-3 px-2 text-left rounded hover:bg-muted/50 transition-colors"
-                >
-                  <span className="flex-shrink-0">{item.icon}</span>
-                  <span className="text-sm font-medium">{item.label}</span>
-                </button>
-              ))}
-            </div>
-          ))}
+        {/* Acciones bajo la tabla: gestión de tickets/listas y reportes/marketing */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="space-y-0">
+            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide px-2 mb-2">Gestión de tickets y listas</p>
+            {col2.map((item, i) => (
+              <button
+                key={i}
+                onClick={() => handleAction(item)}
+                className="w-full flex items-center gap-3 py-3 px-2 text-left rounded hover:bg-muted/50 transition-colors"
+              >
+                <span className="flex-shrink-0">{item.icon}</span>
+                <span className="text-sm font-medium">{item.label}</span>
+              </button>
+            ))}
+          </div>
+          <div className="space-y-0">
+            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide px-2 mb-2">Reportes y marketing</p>
+            {col3.map((item, i) => (
+              <button
+                key={i}
+                onClick={() => handleAction(item)}
+                className="w-full flex items-center gap-3 py-3 px-2 text-left rounded hover:bg-muted/50 transition-colors"
+              >
+                <span className="flex-shrink-0">{item.icon}</span>
+                <span className="text-sm font-medium">{item.label}</span>
+              </button>
+            ))}
+          </div>
         </div>
       </div>
       {showGiftModal && id && (

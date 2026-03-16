@@ -20,11 +20,17 @@ import Favoritos from "./pages/Favoritos";
 import Dashboard from "./pages/admin/Dashboard";
 import EventsList from "./pages/admin/EventsList";
 import EventForm from "./pages/admin/EventForm";
+import CreateEventSteps from "./pages/admin/CreateEventSteps";
+import EventCreatedSuccess from "./pages/admin/EventCreatedSuccess";
+import EventTickets from "./pages/admin/EventTickets";
 import EventStats from "./pages/admin/EventStats";
+import EventSalesDetails from "./pages/admin/EventSalesDetails";
 import EventDashboard from "./pages/admin/EventDashboard";
 import CloneEvent from "./pages/admin/CloneEvent";
 import ResumenAcreditacion from "./pages/admin/ResumenAcreditacion";
 import CodigosDescuento from "./pages/admin/CodigosDescuento";
+import LinksRRPP from "./pages/admin/LinksRRPP";
+import CortesiasBase from "./pages/admin/CortesiasBase";
 import {
   PlanimetriaPage,
   FuncionesPage,
@@ -32,16 +38,14 @@ import {
   GaleriaPage,
   TicketsFisicosPage,
   ListaDigitalPage,
-  LinksRRPPPage,
-  CortesiasBasePage,
   CortesiasConsumosPage,
   CortesiasRRPPPage,
   ListaEsperaPage,
   StatsConsumosPage,
   LiquidacionPage,
-  AcreditarPage,
   PixelTikTokPage,
 } from "./pages/admin/PasslinePages";
+import Acreditadores from "./pages/admin/Acreditadores";
 import Metrics from "./pages/admin/Metrics";
 import UsersList from "./pages/admin/UsersList";
 import Tracking from "./pages/admin/Tracking";
@@ -105,7 +109,15 @@ const App = () => (
               path="/admin/events/new"
               element={
                 <ProtectedRoute requireOrganizer>
-                  <EventForm />
+                  <CreateEventSteps />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/admin/events/:id/created"
+              element={
+                <ProtectedRoute requireOrganizer>
+                  <EventCreatedSuccess />
                 </ProtectedRoute>
               }
             />
@@ -114,6 +126,14 @@ const App = () => (
               element={
                 <ProtectedRoute requireOrganizer>
                   <EventForm />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/admin/events/:id/tickets"
+              element={
+                <ProtectedRoute requireOrganizer>
+                  <EventTickets />
                 </ProtectedRoute>
               }
             />
@@ -133,6 +153,14 @@ const App = () => (
                 </ProtectedRoute>
               }
             />
+            <Route
+              path="/admin/events/:id/sales-details"
+              element={
+                <ProtectedRoute requireOrganizer>
+                  <EventSalesDetails />
+                </ProtectedRoute>
+              }
+            />
             <Route path="/admin/events/:id/planimetria" element={<ProtectedRoute requireOrganizer><PlanimetriaPage /></ProtectedRoute>} />
             <Route path="/admin/events/:id/funciones" element={<ProtectedRoute requireOrganizer><FuncionesPage /></ProtectedRoute>} />
             <Route path="/admin/events/:id/clonar" element={<ProtectedRoute requireOrganizer><CloneEvent /></ProtectedRoute>} />
@@ -141,14 +169,14 @@ const App = () => (
             <Route path="/admin/events/:id/galeria" element={<ProtectedRoute requireOrganizer><GaleriaPage /></ProtectedRoute>} />
             <Route path="/admin/events/:id/tickets-fisicos" element={<ProtectedRoute requireOrganizer><TicketsFisicosPage /></ProtectedRoute>} />
             <Route path="/admin/events/:id/lista-digital" element={<ProtectedRoute requireOrganizer><ListaDigitalPage /></ProtectedRoute>} />
-            <Route path="/admin/events/:id/links-rrpp" element={<ProtectedRoute requireOrganizer><LinksRRPPPage /></ProtectedRoute>} />
-            <Route path="/admin/events/:id/cortesias-base" element={<ProtectedRoute requireOrganizer><CortesiasBasePage /></ProtectedRoute>} />
+            <Route path="/admin/events/:id/links-rrpp" element={<ProtectedRoute requireOrganizer><LinksRRPP /></ProtectedRoute>} />
+            <Route path="/admin/events/:id/cortesias-base" element={<ProtectedRoute requireOrganizer><CortesiasBase /></ProtectedRoute>} />
             <Route path="/admin/events/:id/cortesias-consumos" element={<ProtectedRoute requireOrganizer><CortesiasConsumosPage /></ProtectedRoute>} />
             <Route path="/admin/events/:id/cortesias-rrpp" element={<ProtectedRoute requireOrganizer><CortesiasRRPPPage /></ProtectedRoute>} />
             <Route path="/admin/events/:id/lista-espera" element={<ProtectedRoute requireOrganizer><ListaEsperaPage /></ProtectedRoute>} />
             <Route path="/admin/events/:id/stats-consumos" element={<ProtectedRoute requireOrganizer><StatsConsumosPage /></ProtectedRoute>} />
             <Route path="/admin/events/:id/liquidacion" element={<ProtectedRoute requireOrganizer><LiquidacionPage /></ProtectedRoute>} />
-            <Route path="/admin/events/:id/acreditar" element={<ProtectedRoute requireOrganizer><AcreditarPage /></ProtectedRoute>} />
+            <Route path="/admin/events/:id/acreditar" element={<ProtectedRoute requireOrganizer><Acreditadores /></ProtectedRoute>} />
             <Route path="/admin/events/:id/resumen-acreditacion" element={<ProtectedRoute requireOrganizer><ResumenAcreditacion /></ProtectedRoute>} />
             <Route path="/admin/events/:id/pixel-tiktok" element={<ProtectedRoute requireOrganizer><PixelTikTokPage /></ProtectedRoute>} />
             <Route

@@ -160,7 +160,7 @@ const EventStats = () => {
       <Header />
       <main className="pt-24 pb-16">
         <div className="container mx-auto px-4 max-w-7xl">
-          <div className="mb-6">
+          <div className="mb-6 flex flex-wrap items-center gap-3">
             <Button 
               variant="ghost" 
               onClick={() => navigate(`/admin/events/${id}`)}
@@ -168,6 +168,13 @@ const EventStats = () => {
             >
               <ArrowLeft className="w-4 h-4 mr-2" />
               Volver al Evento
+            </Button>
+            <Button 
+              variant="outline" 
+              size="sm"
+              onClick={() => navigate(`/admin/events/${id}/sales-details`)}
+            >
+              Ver detalle de ventas (tabla)
             </Button>
           </div>
 
@@ -264,43 +271,44 @@ const EventStats = () => {
             </Card>
           </div>
 
-          {/* Gráficos */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-            {/* Gráfico de ventas por tipo de entrada */}
+          {/* Gráfica simplificada */}
+          <div className="mb-8">
             <Card>
               <CardHeader>
-                <CardTitle>Ventas por Tipo de Entrada</CardTitle>
-                <CardDescription>Distribución de ventas</CardDescription>
+                <CardTitle>Gráfica de ventas</CardTitle>
+                <CardDescription>Resumen: vendidas, escaneadas y pendientes por entrar</CardDescription>
               </CardHeader>
               <CardContent>
-                <ResponsiveContainer width="100%" height={300}>
-                  <BarChart data={ticketTypesData}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="name" />
-                    <YAxis />
-                    <Tooltip />
+                <ResponsiveContainer width="100%" height={320}>
+                  <BarChart data={salesData} margin={{ top: 16, right: 16, left: 0, bottom: 0 }}>
+                    <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+                    <XAxis dataKey="name" tick={{ fontSize: 12 }} />
+                    <YAxis tick={{ fontSize: 12 }} />
+                    <Tooltip formatter={(value: number) => [value, '']} />
                     <Legend />
-                    <Bar dataKey="vendidas" fill="#8884d8" name="Vendidas" />
-                    <Bar dataKey="disponibles" fill="#82ca9d" name="Disponibles" />
+                    <Bar dataKey="value" name="Cantidad" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
                   </BarChart>
                 </ResponsiveContainer>
+                <p className="text-xs text-muted-foreground mt-2 text-center">
+                  Vendidas: total emitidas · Escaneadas: QR validado · Pendientes: aún no ingresaron
+                </p>
               </CardContent>
             </Card>
-
-            {/* Gráfico de estado de entradas */}
-            <Card>
+            <Card className="mt-6">
               <CardHeader>
-                <CardTitle>Estado de Entradas</CardTitle>
-                <CardDescription>Vendidas vs Escaneadas</CardDescription>
+                <CardTitle>Ventas por tipo de entrada</CardTitle>
+                <CardDescription>Comparativa vendidas vs disponibles por tipo</CardDescription>
               </CardHeader>
               <CardContent>
                 <ResponsiveContainer width="100%" height={300}>
-                  <BarChart data={salesData}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="name" />
-                    <YAxis />
+                  <BarChart data={ticketTypesData} margin={{ top: 16, right: 16, left: 0, bottom: 60 }}>
+                    <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+                    <XAxis dataKey="name" angle={-35} textAnchor="end" height={60} tick={{ fontSize: 11 }} />
+                    <YAxis tick={{ fontSize: 12 }} />
                     <Tooltip />
-                    <Bar dataKey="value" fill="#8884d8" />
+                    <Legend />
+                    <Bar dataKey="vendidas" fill="hsl(var(--primary))" name="Vendidas" radius={[4, 4, 0, 0]} />
+                    <Bar dataKey="disponibles" fill="hsl(var(--muted-foreground) / 0.3)" name="Disponibles" radius={[4, 4, 0, 0]} />
                   </BarChart>
                 </ResponsiveContainer>
               </CardContent>

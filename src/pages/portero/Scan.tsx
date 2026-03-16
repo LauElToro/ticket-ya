@@ -2,14 +2,20 @@ import { useState, useEffect, useRef } from 'react';
 import { useMutation } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { Html5Qrcode } from 'html5-qrcode';
 import { porteroApi } from '@/lib/api';
 import { toast } from '@/hooks/use-toast';
-import { CheckCircle2, XCircle, ArrowLeft, Loader2, QrCode, Camera } from 'lucide-react';
+import { CheckCircle2, XCircle, ArrowLeft, Loader2, QrCode, Camera, KeyRound } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 const Scan = () => {
   const scannerRef = useRef<Html5Qrcode | null>(null);
+  const [eventId, setEventId] = useState<string | null>(null);
+  const [eventTitle, setEventTitle] = useState<string | null>(null);
+  const [eventCode, setEventCode] = useState('');
+  const [eventKey, setEventKey] = useState('');
   const [scanResult, setScanResult] = useState<{
     isValid: boolean;
     reason?: string;
@@ -19,8 +25,20 @@ const Scan = () => {
   const [isInitializing, setIsInitializing] = useState(true);
   const scannerId = 'portero-qr-scanner';
 
+  const validateEventMutation = useMutation({
+    mutationFn: () => porteroApi.validateEvent(eventCode.trim(), eventKey.trim()),
+    onSuccess: (res) => {
+      setEventId(res.data.eventId);
+      setEventTitle(res.data.title || null);
+      toast({ title: 'Evento validado', description: 'Ya podés escanear entradas.' });
+    },
+    onError: (e: any) => {
+      toast({ title: 'Error', description: e?.response?.data?.message || 'Código o llave incorrectos.', variant: 'destructive' });
+    },
+  });
+
   const scanMutation = useMutation({
-    mutationFn: (qrCode: string) => porteroApi.scanTicket(qrCode),
+    mutationFn: ({ qrCode, evId }: { qrCode: string; evId?: string }) => porteroApi.scanTicket(qrCode, evId),
     onSuccess: (response) => {
       setIsScanning(false);
       setScanResult(response.data);
@@ -76,7 +94,7 @@ const Scan = () => {
     } catch (e) {
       // Ignorar errores de audio
     }
-    scanMutation.mutate(decodedText);
+    scanMutation.mutate({ qrCode: decodedText, evId: eventId || undefined });
   };
 
   // Inicializar scanner cuando el componente se monta o cuando se reinicia
@@ -132,10 +150,72 @@ const Scan = () => {
     setIsInitializing(true);
   };
 
-  // No usar Header/Footer para mantener la pantalla simple y rápida
+  const handleSalirEvento = () => {
+    setEventId(null);
+    setEventTitle(null);
+    setEventCode('');
+    setEventKey('');
+    setScanResult(null);
+  };
+
+  if (!eventId) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center p-4">
+        <Card className="w-full max-w-md">
+          <CardContent className="p-6">
+            <div className="flex items-center gap-2 mb-4">
+              <KeyRound className="w-8 h-8 text-primary" />
+              <h1 className="text-xl font-bold">Dashboard de acreditador</h1>
+            </div>
+            <p className="text-muted-foreground text-sm mb-6">
+              Ingresá el código y la llave del evento que te dio el organizador para poder escanear QR.
+            </p>
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                validateEventMutation.mutate();
+              }}
+              className="space-y-4"
+            >
+              <div>
+                <Label>Código del evento</Label>
+                <Input
+                  value={eventCode}
+                  onChange={(e) => setEventCode(e.target.value)}
+                  placeholder="Ej: 5088"
+                  required
+                  className="mt-1"
+                />
+              </div>
+              <div>
+                <Label>Llave del evento</Label>
+                <Input
+                  value={eventKey}
+                  onChange={(e) => setEventKey(e.target.value)}
+                  placeholder="Llave (link privado)"
+                  className="mt-1"
+                />
+              </div>
+              <Button type="submit" className="w-full" disabled={validateEventMutation.isPending}>
+                {validateEventMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
+                Comenzar a escanear
+              </Button>
+            </form>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-background flex items-center justify-center p-4">
       <div className="w-full max-w-md">
+        {eventTitle && (
+          <div className="flex items-center justify-between gap-2 mb-2 px-1">
+            <p className="text-sm font-medium truncate">Evento: {eventTitle}</p>
+            <Button variant="ghost" size="sm" onClick={handleSalirEvento}>Salir</Button>
+          </div>
+        )}
         {!scanResult ? (
           <Card className="overflow-hidden">
             <CardContent className="p-0">

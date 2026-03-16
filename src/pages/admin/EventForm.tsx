@@ -84,6 +84,9 @@ const EventForm = () => {
     latitude: '',
     longitude: '',
     isPublic: true, // Por defecto público
+    authorizationCode: '',
+    bannerTop: '',
+    bannerEmail: '',
   });
 
   const [ticketTypes, setTicketTypes] = useState<TicketType[]>([
@@ -96,6 +99,10 @@ const EventForm = () => {
   const [imageFileInfo, setImageFileInfo] = useState<{ size: number; dimensions?: string } | null>(null);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const bannerTopRef = useRef<HTMLInputElement>(null);
+  const bannerEmailRef = useRef<HTMLInputElement>(null);
+  const [isUploadingBannerTop, setIsUploadingBannerTop] = useState(false);
+  const [isUploadingBannerEmail, setIsUploadingBannerEmail] = useState(false);
 
   // Cargar evento si es edición
   const { data: eventData, isLoading: isLoadingEvent, error: eventError } = useQuery({
@@ -140,6 +147,9 @@ const EventForm = () => {
       latitude: event.latitude ? String(event.latitude) : '',
       longitude: event.longitude ? String(event.longitude) : '',
       isPublic: event.isPublic !== undefined ? event.isPublic : true,
+      authorizationCode: event.authorizationCode || '',
+      bannerTop: event.bannerTop || '',
+      bannerEmail: event.bannerEmail || '',
     });
     
     // Limpiar información de archivo al cargar evento existente
@@ -521,6 +531,38 @@ const EventForm = () => {
     }
   };
 
+  const handleBannerUpload = async (e: React.ChangeEvent<HTMLInputElement>, field: 'bannerTop' | 'bannerEmail') => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!file.type.startsWith('image/')) {
+      toast({ title: 'Solo imágenes (JPG, PNG)', variant: 'destructive' });
+      return;
+    }
+    if (file.size > 1024 * 1024) {
+      toast({ title: 'Máximo 1 MB', variant: 'destructive' });
+      return;
+    }
+    if (field === 'bannerTop') setIsUploadingBannerTop(true);
+    else setIsUploadingBannerEmail(true);
+    try {
+      const response = await uploadApi.uploadImage(file);
+      if (response.success) {
+        setFormData((prev) => ({ ...prev, [field]: response.data.url }));
+        toast({ title: 'Banner subido', description: 'Guardá los cambios para aplicar.' });
+      }
+    } catch (err: any) {
+      toast({ title: 'Error al subir', description: err?.message, variant: 'destructive' });
+    } finally {
+      if (field === 'bannerTop') {
+        setIsUploadingBannerTop(false);
+        bannerTopRef.current && (bannerTopRef.current.value = '');
+      } else {
+        setIsUploadingBannerEmail(false);
+        bannerEmailRef.current && (bannerEmailRef.current.value = '');
+      }
+    }
+  };
+
   const getGoogleMapsSearchUrl = () => {
     if (formData.address) {
       const encodedAddress = encodeURIComponent(formData.address);
@@ -837,6 +879,75 @@ const EventForm = () => {
                   </div>
                 </CardContent>
               </Card>
+
+              {/* Solo al editar: más fotos, banner superior, banner correo, código de autorización */}
+              {isEdit && (
+                <Card className="border-2 shadow-lg">
+                  <CardHeader className="pb-4">
+                    <CardTitle className="text-xl">Imágenes y código de autorización</CardTitle>
+                    <CardDescription>Banner superior, banner de correo y código que se genera al crear el evento.</CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-6">
+                    <div>
+                      <Label className="text-base font-semibold">Imagen principal del evento</Label>
+                      <p className="text-xs text-muted-foreground mt-1 mb-2">
+                        La imagen debe ser 800×800 px (se redimensiona si hace falta). Máx. 4 MB. Si no agregás una, el evento no aparecerá en la página principal hasta tenerla.
+                      </p>
+                      <div className="flex items-center gap-3">
+                        <Button
+                          type="button"
+                          variant="outline"
+                          onClick={() => fileInputRef.current?.click()}
+                          disabled={mutation.isPending || isUploadingImage}
+                        >
+                          {isUploadingImage ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Upload className="w-4 h-4 mr-2" />}
+                          {formData.image ? 'Cambiar imagen' : 'Seleccionar archivo'}
+                        </Button>
+                        <span className="text-sm text-muted-foreground">{formData.image ? 'Imagen cargada' : 'ningún archivo seleccionado'}</span>
+                      </div>
+                    </div>
+                    <div>
+                      <Label className="text-base font-semibold">Banner superior</Label>
+                      <p className="text-xs text-muted-foreground mt-1 mb-2">
+                        Cambiar banner superior: 725×300 px (se redimensiona). Máx. 1 MB.
+                      </p>
+                      <input ref={bannerTopRef} type="file" accept="image/*" className="hidden" onChange={(e) => handleBannerUpload(e, 'bannerTop')} />
+                      <div className="flex items-center gap-3">
+                        <Button type="button" variant="outline" onClick={() => bannerTopRef.current?.click()} disabled={mutation.isPending || isUploadingBannerTop}>
+                          {isUploadingBannerTop ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
+                          Seleccionar archivo
+                        </Button>
+                        <span className="text-sm text-muted-foreground">{formData.bannerTop ? 'Banner cargado' : 'ningún archivo seleccionado'}</span>
+                      </div>
+                    </div>
+                    <div>
+                      <Label className="text-base font-semibold">Banner correo</Label>
+                      <p className="text-xs text-muted-foreground mt-1 mb-2">
+                        Cambiar banner correo: ancho 650 px (el alto es irrelevante). Máx. 1 MB.
+                      </p>
+                      <input ref={bannerEmailRef} type="file" accept="image/*" className="hidden" onChange={(e) => handleBannerUpload(e, 'bannerEmail')} />
+                      <div className="flex items-center gap-3">
+                        <Button type="button" variant="outline" onClick={() => bannerEmailRef.current?.click()} disabled={mutation.isPending || isUploadingBannerEmail}>
+                          {isUploadingBannerEmail ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
+                          Seleccionar archivo
+                        </Button>
+                        <span className="text-sm text-muted-foreground">{formData.bannerEmail ? 'Banner cargado' : 'ningún archivo seleccionado'}</span>
+                      </div>
+                    </div>
+                    <div>
+                      <Label className="text-base font-semibold">Código de autorización</Label>
+                      <p className="text-xs text-muted-foreground mt-1">Se genera al crear el evento. Podés editarlo si lo necesitás.</p>
+                      <Input
+                        value={formData.authorizationCode}
+                        onChange={(e) => setFormData({ ...formData, authorizationCode: e.target.value })}
+                        placeholder="Ej: 5088"
+                        className="mt-2 max-w-[140px] font-mono"
+                        disabled={mutation.isPending}
+                      />
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
 
               {/* Fecha y lugar */}
               <Card className="border-2 shadow-lg">
