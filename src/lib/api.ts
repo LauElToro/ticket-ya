@@ -135,6 +135,7 @@ class ApiClient {
               window.location.href = '/login';
             }
           }
+          throw new Error('Tu sesión expiró. Volvé a iniciar sesión.');
         }
       }
 
