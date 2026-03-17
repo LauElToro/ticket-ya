@@ -165,7 +165,45 @@ const EventDashboard = () => {
           </button>
         </div>
 
-        <h1 className="text-2xl font-semibold text-foreground mb-6">{event.title}</h1>
+        <h1 className="text-2xl font-semibold text-foreground mb-4">{event.title}</h1>
+
+        {/* Apartado: resumen del evento (Lugar, Código, Llave, Fecha, Aforo, Venta WEB, Estado) */}
+        <div className="border rounded-lg overflow-hidden mb-6">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="bg-muted/50">
+                <th className="text-left py-2.5 px-4 font-medium text-muted-foreground">Lugar / País</th>
+                <th className="text-left py-2.5 px-4 font-medium text-muted-foreground">Código</th>
+                <th className="text-left py-2.5 px-4 font-medium text-muted-foreground">Llave</th>
+                <th className="text-left py-2.5 px-4 font-medium text-muted-foreground">Fecha evento</th>
+                <th className="text-left py-2.5 px-4 font-medium text-muted-foreground">Aforo</th>
+                <th className="text-left py-2.5 px-4 font-medium text-muted-foreground">Venta WEB</th>
+                <th className="text-left py-2.5 px-4 font-medium text-muted-foreground">Estado</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr className="border-t">
+                <td className="py-2.5 px-4">
+                  <div>{lugarPais || '-'}</div>
+                  <div className="text-muted-foreground text-xs">{event?.organizer?.name || ''} / {paisLine}</div>
+                </td>
+                <td className="py-2.5 px-4 font-mono">{codigo}</td>
+                <td className="py-2.5 px-4 font-mono">{llave}</td>
+                <td className="py-2.5 px-4">
+                  {eventDate ? (
+                    <>
+                      <div>{eventDate.toLocaleDateString('es-AR', { day: 'numeric', month: 'long' })}</div>
+                      <div className="text-muted-foreground text-xs">{eventDate.getFullYear()} a las {eventDate.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' })}</div>
+                    </>
+                  ) : '-'}
+                </td>
+                <td className="py-2.5 px-4">{ticketsSold} de {totalCapacity}</td>
+                <td className="py-2.5 px-4">$ {new Intl.NumberFormat('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(revenue)}</td>
+                <td className="py-2.5 px-4">{getEventStatus()}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
 
         {/* Tres columnas: Configuración Evento | Gestión de tickets y listas | Reportes y marketing */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">

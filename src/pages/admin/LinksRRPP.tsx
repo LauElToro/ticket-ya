@@ -14,6 +14,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+import { Checkbox } from '@/components/ui/checkbox';
 import { toast } from '@/hooks/use-toast';
 import {
   ArrowLeft,
@@ -26,7 +27,6 @@ import {
   Download,
   Upload,
   Search,
-  XCircle,
 } from 'lucide-react';
 
 const LinksRRPP = () => {
@@ -36,6 +36,7 @@ const LinksRRPP = () => {
   const [filterName, setFilterName] = useState('');
   const [modalOpen, setModalOpen] = useState(false);
   const [form, setForm] = useState({ name: '', email: '', phone: '', commissionPercent: '', cvuCbu: '' });
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const { data, isLoading } = useQuery({
@@ -73,7 +74,8 @@ const LinksRRPP = () => {
       });
     },
     onError: (e: any) => {
-      toast({ title: 'Error', description: e?.response?.data?.message || 'Error', variant: 'destructive' });
+      const msg = e?.response?.data?.error?.message ?? e?.response?.data?.message ?? e?.message ?? 'No se pudo cambiar el estado';
+      toast({ title: 'Error', description: msg, variant: 'destructive' });
     },
   });
 
@@ -95,6 +97,27 @@ const LinksRRPP = () => {
     onError: (e: any) => toast({ title: 'Error', description: e?.response?.data?.message, variant: 'destructive' }),
   });
 
+  const setSelectedActiveMutation = useMutation({
+    mutationFn: async ({ vendedorIds, isActive }: { vendedorIds: string[]; isActive: boolean }) => {
+      for (const vendedorId of vendedorIds) {
+        await adminApi.setPromotorActive(id!, vendedorId, isActive);
+      }
+      return { count: vendedorIds.length, isActive };
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ['event-promotores', id] });
+      setSelectedIds(new Set());
+      toast({
+        title: data.isActive ? 'Promotores activados' : 'Promotores desactivados',
+        description: `${data.count} promotor${data.count !== 1 ? 'es' : ''} actualizado${data.count !== 1 ? 's' : ''}.`,
+      });
+    },
+    onError: (e: any) => {
+      const msg = e?.response?.data?.error?.message ?? e?.message ?? 'No se pudo actualizar';
+      toast({ title: 'Error', description: msg, variant: 'destructive' });
+    },
+  });
+
   const importMutation = useMutation({
     mutationFn: (items: Array<{ name: string; email: string; phone?: string }>) =>
       adminApi.importEventPromotores(id!, items),
@@ -109,6 +132,8 @@ const LinksRRPP = () => {
 
   const event = data?.data?.event;
   const promotores = data?.data?.promotores || [];
+  const getVendedorId = (p: any) => p.vendedorId ?? p.id ?? '';
+
   const filtered = filterName.trim()
     ? promotores.filter(
         (p: any) =>
@@ -224,6 +249,20 @@ const LinksRRPP = () => {
             Desactivar Todos
           </Button>
           <Button
+            variant="outline"
+            onClick={() => setSelectedActiveMutation.mutate({ vendedorIds: Array.from(selectedIds), isActive: true })}
+            disabled={selectedIds.size === 0 || setSelectedActiveMutation.isPending}
+          >
+            Activar seleccionados
+          </Button>
+          <Button
+            variant="outline"
+            onClick={() => setSelectedActiveMutation.mutate({ vendedorIds: Array.from(selectedIds), isActive: false })}
+            disabled={selectedIds.size === 0 || setSelectedActiveMutation.isPending}
+          >
+            Desactivar seleccionados
+          </Button>
+          <Button
             className="bg-amber-500 hover:bg-amber-600"
             onClick={() => activateAllMutation.mutate()}
             disabled={activateAllMutation.isPending || promotores.length === 0}
@@ -268,6 +307,16 @@ const LinksRRPP = () => {
           <table className="w-full text-sm">
             <thead className="bg-muted/50">
               <tr>
+                <th className="w-10 py-3 px-2 text-center">
+                  <Checkbox
+                    checked={filtered.length > 0 && filtered.every((p: any) => selectedIds.has(getVendedorId(p)))}
+                    onCheckedChange={(checked) => {
+                      if (checked) setSelectedIds(new Set(filtered.map((p: any) => getVendedorId(p)).filter(Boolean)));
+                      else setSelectedIds(new Set());
+                    }}
+                    aria-label="Seleccionar todos"
+                  />
+                </th>
                 <th className="text-left py-3 px-4 font-medium">Nombre</th>
                 <th className="text-left py-3 px-4 font-medium">Email</th>
                 <th className="text-left py-3 px-4 font-medium">Link Venta</th>
@@ -281,60 +330,79 @@ const LinksRRPP = () => {
             <tbody>
               {filtered.length === 0 ? (
                 <tr>
-                  <td colSpan={8} className="py-8 text-center text-muted-foreground">
+                  <td colSpan={9} className="py-8 text-center text-muted-foreground">
                     No hay promotores. Agregá uno con el botón &quot;Agregar promotor&quot; o cargá un Excel.
                   </td>
                 </tr>
               ) : (
-                filtered.map((p: any) => (
-                  <tr key={p.vendedorId} className="border-t">
-                    <td className="py-3 px-4">{p.name}</td>
-                    <td className="py-3 px-4">{p.email}</td>
-                    <td className="py-3 px-4">
-                      {p.linkVenta?.customUrl ? (
+                filtered.map((p: any) => {
+                  const vid = getVendedorId(p);
+                  return (
+                    <tr key={vid || p.email} className="border-t">
+                      <td className="w-10 py-3 px-2 text-center">
+                        <Checkbox
+                          checked={selectedIds.has(vid)}
+                          onCheckedChange={(checked) => {
+                            setSelectedIds((prev) => {
+                              const next = new Set(prev);
+                              if (checked) next.add(vid);
+                              else next.delete(vid);
+                              return next;
+                            });
+                          }}
+                          aria-label={`Seleccionar ${p.name || p.email}`}
+                        />
+                      </td>
+                      <td className="py-3 px-4">{p.name}</td>
+                      <td className="py-3 px-4">{p.email}</td>
+                      <td className="py-3 px-4">
+                        {p.linkVenta?.customUrl ? (
+                          <button
+                            type="button"
+                            onClick={() => handleCopyLink(p.linkVenta.customUrl)}
+                            className="text-amber-600 hover:underline flex items-center gap-1"
+                            title="Copiar link de venta"
+                          >
+                            <Link2 className="w-4 h-4" />
+                            Copiar
+                          </button>
+                        ) : (
+                          '-'
+                        )}
+                      </td>
+                      <td className="py-3 px-4 text-muted-foreground">-</td>
+                      <td className="py-3 px-4">{p.cortesia ?? '0/0'}</td>
+                      <td className="py-3 px-4">{p.soldQty ?? 0}</td>
+                      <td className="py-3 px-4">{p.invitaciones ?? '0'}</td>
+                      <td className="py-3 px-4">
                         <button
                           type="button"
-                          onClick={() => handleCopyLink(p.linkVenta.customUrl)}
-                          className="text-amber-600 hover:underline flex items-center gap-1"
-                          title="Copiar link de venta"
+                          onClick={() => {
+                            if (!vid) return;
+                            setActiveMutation.mutate({
+                              vendedorId: vid,
+                              isActive: !p.isActive,
+                            });
+                          }}
+                          disabled={setActiveMutation.isPending}
+                          className={`inline-flex items-center gap-1 px-2 py-1 rounded text-xs ${
+                            p.isActive
+                              ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400'
+                              : 'bg-muted text-muted-foreground'
+                          }`}
+                          title={p.isActive ? 'Clic para desactivar' : 'Clic para activar (envía link por email)'}
                         >
-                          <Link2 className="w-4 h-4" />
-                          Copiar
+                          {p.isActive ? (
+                            <UserCheck className="w-3 h-3" />
+                          ) : (
+                            <UserX className="w-3 h-3" />
+                          )}
+                          {p.isActive ? 'Activo' : 'Inactivo'}
                         </button>
-                      ) : (
-                        '-'
-                      )}
-                    </td>
-                    <td className="py-3 px-4 text-muted-foreground">-</td>
-                    <td className="py-3 px-4">{p.cortesia ?? '0/0'}</td>
-                    <td className="py-3 px-4">{p.soldQty ?? 0}</td>
-                    <td className="py-3 px-4">{p.invitaciones ?? '0'}</td>
-                    <td className="py-3 px-4">
-                      <button
-                        type="button"
-                        onClick={() =>
-                          setActiveMutation.mutate({
-                            vendedorId: p.vendedorId,
-                            isActive: !p.isActive,
-                          })
-                        }
-                        className={`inline-flex items-center gap-1 px-2 py-1 rounded text-xs ${
-                          p.isActive
-                            ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400'
-                            : 'bg-muted text-muted-foreground'
-                        }`}
-                        title={p.isActive ? 'Desactivar' : 'Activar (envía link por email)'}
-                      >
-                        {p.isActive ? (
-                          <UserCheck className="w-3 h-3" />
-                        ) : (
-                          <UserX className="w-3 h-3" />
-                        )}
-                        {p.isActive ? 'Activo' : 'Inactivo'}
-                      </button>
-                    </td>
-                  </tr>
-                ))
+                      </td>
+                    </tr>
+                  );
+                })
               )}
             </tbody>
           </table>

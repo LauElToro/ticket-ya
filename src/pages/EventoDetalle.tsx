@@ -10,6 +10,14 @@ import { eventsApi, favoriteApi } from '@/lib/api';
 import { getEventImageUrl } from '@/lib/utils';
 import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { Label } from '@/components/ui/label';
 import { useAuth } from '@/contexts/AuthContext';
 import { TrackingScripts, useTrackEvent } from '@/components/TrackingScripts';
 
@@ -20,6 +28,7 @@ const EventoDetalle = () => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const [selectedTickets, setSelectedTickets] = useState<Record<string, number>>({});
+  const [selectedAge, setSelectedAge] = useState<number | null>(null);
   const refCode = searchParams.get('ref'); // Código de referido
   const privateLink = searchParams.get('link'); // Link privado para eventos privados
 
@@ -143,6 +152,8 @@ const EventoDetalle = () => {
       latitude: (event as any).latitude,
       longitude: (event as any).longitude,
       tickets: tickets,
+      ageRestriction: !!(event as any).ageRestriction,
+      minAge: (event as any).minAge != null ? Number((event as any).minAge) : null,
     };
   }, [eventResponse]);
 
@@ -190,7 +201,26 @@ const EventoDetalle = () => {
       });
       return;
     }
-    navigate('/checkout', { state: { event: eventData, tickets: selectedTickets, refCode } });
+    if (eventData.ageRestriction && eventData.minAge != null) {
+      if (selectedAge == null) {
+        toast({
+          title: 'Seleccioná tu edad',
+          variant: 'destructive',
+        });
+        return;
+      }
+      if (selectedAge < eventData.minAge) {
+        toast({
+          title: 'Edad mínima',
+          description: `Este evento es para mayores de ${eventData.minAge} años.`,
+          variant: 'destructive',
+        });
+        return;
+      }
+    }
+    navigate('/checkout', {
+      state: { event: eventData, tickets: selectedTickets, refCode, selectedAge: selectedAge ?? undefined },
+    });
   };
 
   if (isLoading) {
@@ -558,6 +588,28 @@ const EventoDetalle = () => {
                   )}
                 </div>
 
+                {/* Selector de edad cuando el evento tiene restricción */}
+                {eventData.ageRestriction && eventData.minAge != null && (
+                  <div className="space-y-2 pt-2">
+                    <Label className="text-sm font-medium">Tu edad (requerido para este evento)</Label>
+                    <Select
+                      value={selectedAge != null ? String(selectedAge) : ''}
+                      onValueChange={(v) => setSelectedAge(v ? Number(v) : null)}
+                    >
+                      <SelectTrigger className="w-full">
+                        <SelectValue placeholder="Seleccioná tu edad" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {Array.from({ length: 21 }, (_, i) => 10 + i).map((age) => (
+                          <SelectItem key={age} value={String(age)}>
+                            {age} años
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
+
                 {/* Total & Buy Button */}
                 <div className="pt-4 border-t border-border space-y-4">
                   {totalTickets > 0 && (
@@ -583,7 +635,10 @@ const EventoDetalle = () => {
                     size="xl"
                     className="w-full h-14 text-lg font-semibold shadow-lg hover:shadow-xl transition-all"
                     onClick={handleBuy}
-                    disabled={totalTickets === 0}
+                    disabled={
+                      totalTickets === 0 ||
+                      (eventData.ageRestriction && eventData.minAge != null && selectedAge == null)
+                    }
                   >
                     {totalTickets > 0 ? (
                       <>

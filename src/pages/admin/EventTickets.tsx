@@ -41,7 +41,7 @@ const STATUS_OPTIONS = [
 const generateTimeOptions = () => {
   const t: string[] = [];
   for (let h = 0; h < 24; h++)
-    for (let m = 0; m < 60; m += 5)
+    for (let m = 0; m < 60; m += 15)
       t.push(`${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`);
   return t;
 };

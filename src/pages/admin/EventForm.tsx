@@ -13,31 +13,11 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { toast } from '@/hooks/use-toast';
 import { Loader2, Plus, Trash2, ArrowLeft, Upload, MapPin, Image as ImageIcon, Calendar, Clock, Building2, MapPin as MapPinIcon, Ticket, AlertCircle, CheckCircle2, Info } from 'lucide-react';
 
-interface TandaTicketType {
-  name: string; // Nombre del tipo de entrada
-  price: string; // Precio en esta tanda
-  quantity: string; // Cantidad disponible en esta tanda
-}
-
-interface Tanda {
-  id?: string; // ID opcional para tandas existentes
-  name: string;
-  startDate: string;
-  endDate: string;
-  ticketTypes: TandaTicketType[]; // Tipos de entrada con precios para esta tanda
-}
-
-interface TicketType {
-  id?: string; // ID opcional para tipos existentes
-  name: string;
-  totalQty: string; // Cantidad total (suma de todas las tandas)
-}
-
-// Función helper para generar horas en intervalos de 5 minutos
+// Función helper para generar horas en intervalos de 15 minutos (00:00, 00:15, 00:30, 00:45, ...)
 const generateTimeOptions = () => {
   const times = [];
   for (let hour = 0; hour < 24; hour++) {
-    for (let minute = 0; minute < 60; minute += 5) {
+    for (let minute = 0; minute < 60; minute += 15) {
       const timeString = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
       times.push(timeString);
     }
@@ -51,11 +31,11 @@ const getMinDate = () => {
   return today.toISOString().split('T')[0];
 };
 
-// Función helper para redondear hora a intervalo de 5 minutos
-const roundToNearest5Minutes = (time: string): string => {
+// Función helper para redondear hora a intervalo de 15 minutos
+const roundToNearest15Minutes = (time: string): string => {
   if (!time) return '';
   const [hours, minutes] = time.split(':').map(Number);
-  const roundedMinutes = Math.round(minutes / 5) * 5;
+  const roundedMinutes = Math.round(minutes / 15) * 15;
   if (roundedMinutes >= 60) {
     return `${(hours + 1).toString().padStart(2, '0')}:00`;
   }
@@ -88,12 +68,6 @@ const EventForm = () => {
     bannerTop: '',
     bannerEmail: '',
   });
-
-  const [ticketTypes, setTicketTypes] = useState<TicketType[]>([
-    { name: '', totalQty: '' },
-  ]);
-
-  const [tandas, setTandas] = useState<Tanda[]>([]);
 
   const [isUploadingImage, setIsUploadingImage] = useState(false);
   const [imageFileInfo, setImageFileInfo] = useState<{ size: number; dimensions?: string } | null>(null);
@@ -155,47 +129,7 @@ const EventForm = () => {
     // Limpiar información de archivo al cargar evento existente
     setImageFileInfo(null);
     
-    // Cargar tipos de entrada
-    if (event.ticketTypes && event.ticketTypes.length > 0) {
-      console.log('Cargando tipos de entrada:', event.ticketTypes);
-      setTicketTypes(
-        event.ticketTypes.map((tt: any) => ({
-          id: tt.id,
-          name: tt.name || '',
-          totalQty: String(tt.totalQty || 0),
-        }))
-      );
-    } else {
-      setTicketTypes([{ name: '', totalQty: '' }]);
-    }
-
-    // Cargar tandas
-    if (event.tandas && event.tandas.length > 0) {
-      console.log('Cargando tandas:', event.tandas);
-      const loadedTandas = event.tandas.map((tanda: any) => {
-        console.log('Procesando tanda:', tanda);
-        console.log('tandaTicketTypes:', tanda.tandaTicketTypes);
-        return {
-          id: tanda.id,
-          name: tanda.name || '',
-          startDate: tanda.startDate ? new Date(tanda.startDate).toISOString().split('T')[0] : '',
-          endDate: tanda.endDate ? new Date(tanda.endDate).toISOString().split('T')[0] : '',
-          ticketTypes: tanda.tandaTicketTypes?.map((ttt: any) => {
-            console.log('Procesando tandaTicketType:', ttt);
-            return {
-              name: ttt.ticketType?.name || '',
-              price: String(ttt.price || 0),
-              quantity: String(ttt.quantity || 0),
-            };
-          }) || [],
-        };
-      });
-      console.log('Tandas procesadas:', loadedTandas);
-      setTandas(loadedTandas);
-    } else {
-      console.log('No hay tandas para cargar');
-      setTandas([]);
-    }
+    // Tipos de entrada y tandas se gestionan en "Editar y administra tus eTickets"
   }, [eventData?.data, isEdit]);
 
   // Mostrar error si hay problema cargando el evento
@@ -303,61 +237,6 @@ const EventForm = () => {
     validateField('city', formData.city);
     validateField('category', formData.category);
 
-    // Validar tipos de entrada
-    const validTicketTypes = ticketTypes.filter(
-      (tt) => tt.name && tt.totalQty && parseInt(tt.totalQty) > 0
-    );
-
-    if (validTicketTypes.length === 0) {
-      toast({
-        title: 'Error de validación',
-        description: 'Debes agregar al menos un tipo de entrada válido',
-        variant: 'destructive',
-      });
-      return;
-    }
-
-    // Validar tandas
-    if (tandas.length === 0) {
-      toast({
-        title: 'Error de validación',
-        description: 'Debes agregar al menos una tanda',
-        variant: 'destructive',
-      });
-      return;
-    }
-
-    for (const tanda of tandas) {
-      if (!tanda.startDate || !tanda.endDate) {
-        toast({
-          title: 'Error de validación',
-          description: 'Todas las tandas deben tener fecha de inicio y fin',
-          variant: 'destructive',
-        });
-        return;
-      }
-
-      if (tanda.ticketTypes.length === 0) {
-        toast({
-          title: 'Error de validación',
-          description: 'Cada tanda debe tener al menos un tipo de entrada',
-          variant: 'destructive',
-        });
-        return;
-      }
-
-      for (const tt of tanda.ticketTypes) {
-        if (!tt.price || parseFloat(tt.price) <= 0 || !tt.quantity || parseInt(tt.quantity) <= 0) {
-          toast({
-            title: 'Error de validación',
-            description: 'Todos los tipos de entrada en las tandas deben tener precio y cantidad válidos',
-            variant: 'destructive',
-          });
-          return;
-        }
-      }
-    }
-
     // Verificar si hay errores
     if (Object.keys(errors).length > 0) {
       toast({
@@ -368,108 +247,13 @@ const EventForm = () => {
       return;
     }
 
-    // Calcular totalQty para cada tipo de entrada sumando las cantidades de todas las tandas
-    const ticketTypesWithTotals = validTicketTypes.map((tt) => {
-      const totalQty = tandas.reduce((sum, tanda) => {
-        const tandaType = tanda.ticketTypes.find(t => t.name === tt.name);
-        return sum + (tandaType ? parseInt(tandaType.quantity || '0') : 0);
-      }, 0);
-      return {
-        ...(tt.id && { id: tt.id }),
-        name: tt.name,
-        totalQty: totalQty || parseInt(tt.totalQty),
-      };
-    });
-
-    const eventData = {
+    const eventPayload = {
       ...formData,
-      ticketTypes: ticketTypesWithTotals,
-      tandas: tandas.map((tanda) => ({
-        ...(tanda.id && { id: tanda.id }),
-        name: tanda.name,
-        startDate: tanda.startDate,
-        endDate: tanda.endDate,
-        ticketTypes: tanda.ticketTypes.map((tt) => ({
-          name: tt.name,
-          price: parseFloat(tt.price),
-          quantity: parseInt(tt.quantity),
-        })),
-      })),
+      ticketTypes: [],
+      tandas: [],
     };
 
-    mutation.mutate(eventData);
-  };
-
-  const addTicketType = () => {
-    setTicketTypes([...ticketTypes, { name: '', totalQty: '' }]);
-  };
-
-  const removeTicketType = (index: number) => {
-    if (ticketTypes.length > 1) {
-      setTicketTypes(ticketTypes.filter((_, i) => i !== index));
-    }
-  };
-
-  const updateTicketType = (index: number, field: keyof TicketType, value: string) => {
-    const updated = [...ticketTypes];
-    updated[index] = { ...updated[index], [field]: value };
-    setTicketTypes(updated);
-  };
-
-  const addTanda = () => {
-    const validTicketTypes = ticketTypes.filter(tt => tt.name && tt.name.trim());
-    if (validTicketTypes.length === 0) {
-      toast({
-        title: 'Error',
-        description: 'Primero debes definir al menos un tipo de entrada con nombre',
-        variant: 'destructive',
-      });
-      return;
-    }
-    const newTanda: Tanda = {
-      name: `Tanda ${tandas.length + 1}`,
-      startDate: '',
-      endDate: '',
-      ticketTypes: validTicketTypes.map(tt => ({
-        name: tt.name,
-        price: '',
-        quantity: '',
-      })),
-    };
-    setTandas([...tandas, newTanda]);
-  };
-
-  const removeTanda = (index: number) => {
-    setTandas(tandas.filter((_, i) => i !== index));
-  };
-
-  const updateTanda = (index: number, field: keyof Tanda, value: string) => {
-    const updated = [...tandas];
-    updated[index] = { ...updated[index], [field]: value };
-    setTandas(updated);
-  };
-
-  const updateTandaTicketType = (tandaIndex: number, ticketTypeName: string, field: keyof TandaTicketType, value: string) => {
-    const updated = [...tandas];
-    const tanda = updated[tandaIndex];
-    const existingIndex = tanda.ticketTypes.findIndex(t => t.name === ticketTypeName);
-    
-    if (existingIndex >= 0) {
-      // Actualizar existente
-      tanda.ticketTypes[existingIndex] = {
-        ...tanda.ticketTypes[existingIndex],
-        [field]: value,
-      };
-    } else {
-      // Crear nuevo
-      tanda.ticketTypes.push({
-        name: ticketTypeName,
-        price: field === 'price' ? value : '',
-        quantity: field === 'quantity' ? value : '',
-      });
-    }
-    
-    setTandas(updated);
+    mutation.mutate(eventPayload);
   };
 
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -1019,7 +803,7 @@ const EventForm = () => {
                           id="time"
                           value={formData.time}
                           onChange={(e) => {
-                            const roundedTime = roundToNearest5Minutes(e.target.value);
+                            const roundedTime = roundToNearest15Minutes(e.target.value);
                             setFormData({ ...formData, time: roundedTime });
                             validateField('time', roundedTime);
                           }}
@@ -1145,306 +929,6 @@ const EventForm = () => {
                         />
                       </div>
                     </div>
-                  )}
-                </CardContent>
-              </Card>
-
-              {/* Tipos de entrada */}
-              <Card className="border-2 shadow-lg">
-                <CardHeader className="pb-4">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <div className="p-2 rounded-lg bg-purple-100 dark:bg-purple-900/30">
-                        <Ticket className="w-5 h-5 text-purple-600 dark:text-purple-400" />
-                      </div>
-                      <div>
-                        <CardTitle className="text-xl">Tipos de Entrada</CardTitle>
-                        <CardDescription>Define los tipos de entrada (General, VIP, etc.)</CardDescription>
-                      </div>
-                    </div>
-                    <Button 
-                      type="button" 
-                      variant="outline" 
-                      size="sm" 
-                      onClick={addTicketType}
-                      className="h-9"
-                    >
-                      <Plus className="w-4 h-4 mr-2" />
-                      Agregar Tipo
-                    </Button>
-                  </div>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  {ticketTypes.map((tt, index) => {
-                    const isValid = tt.name && tt.totalQty && parseInt(tt.totalQty) > 0;
-                    // Calcular cantidad total desde las tandas
-                    const calculatedTotal = tandas.reduce((sum, tanda) => {
-                      const tandaType = tanda.ticketTypes.find(t => t.name === tt.name);
-                      return sum + (tandaType ? parseInt(tandaType.quantity || '0') : 0);
-                    }, 0);
-                    return (
-                      <div 
-                        key={index} 
-                        className={`p-4 border-2 rounded-lg transition-all ${
-                          isValid ? 'border-green-200 dark:border-green-800 bg-green-50/50 dark:bg-green-900/10' : 'border-border'
-                        }`}
-                      >
-                        <div className="flex items-center justify-between mb-3">
-                          <div className="flex items-center gap-2">
-                            <span className="text-sm font-semibold">Tipo {index + 1}</span>
-                            {isValid && (
-                              <CheckCircle2 className="w-4 h-4 text-green-500" />
-                            )}
-                          </div>
-                          {ticketTypes.length > 1 && (
-                            <Button
-                              type="button"
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => removeTicketType(index)}
-                              className="h-8 w-8 p-0 text-destructive hover:text-destructive hover:bg-destructive/10"
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </Button>
-                          )}
-                        </div>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                          <div>
-                            <Label>Nombre *</Label>
-                            <Input
-                              value={tt.name}
-                              onChange={(e) => updateTicketType(index, 'name', e.target.value)}
-                              placeholder="Ej: General, VIP, Mitangrid"
-                              className="mt-1 h-10"
-                              disabled={mutation.isPending}
-                            />
-                          </div>
-                          <div>
-                            <Label>Cantidad Total</Label>
-                            <Input
-                              type="number"
-                              value={calculatedTotal > 0 ? String(calculatedTotal) : tt.totalQty}
-                              onChange={(e) => updateTicketType(index, 'totalQty', e.target.value)}
-                              placeholder="0"
-                              min="1"
-                              className="mt-1 h-10"
-                              disabled={mutation.isPending || calculatedTotal > 0}
-                              title={calculatedTotal > 0 ? "La cantidad se calcula automáticamente desde las tandas" : ""}
-                            />
-                            {calculatedTotal > 0 && (
-                              <p className="text-xs text-muted-foreground mt-1">
-                                Calculado automáticamente desde las tandas: {calculatedTotal}
-                              </p>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </CardContent>
-              </Card>
-
-              {/* Tandas */}
-              <Card className="border-2 shadow-lg">
-                <CardHeader className="pb-4">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <div className="p-2 rounded-lg bg-blue-100 dark:bg-blue-900/30">
-                        <Calendar className="w-5 h-5 text-blue-600 dark:text-blue-400" />
-                      </div>
-                      <div>
-                        <CardTitle className="text-xl">Tandas</CardTitle>
-                        <CardDescription>Define las tandas con fechas y precios por tipo de entrada</CardDescription>
-                      </div>
-                    </div>
-                    <Button 
-                      type="button" 
-                      variant="outline" 
-                      size="sm" 
-                      onClick={addTanda}
-                      className="h-9"
-                      disabled={ticketTypes.length === 0 || ticketTypes.some(tt => !tt.name)}
-                    >
-                      <Plus className="w-4 h-4 mr-2" />
-                      Agregar Tanda
-                    </Button>
-                  </div>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  {tandas.length === 0 ? (
-                    <p className="text-sm text-muted-foreground text-center py-8">
-                      Agregá tandas para definir períodos de venta con diferentes precios por tipo de entrada
-                    </p>
-                  ) : (
-                    tandas.map((tanda, tandaIndex) => (
-                      <div key={tandaIndex} className="p-5 border-2 rounded-lg bg-muted/30">
-                        <div className="flex items-center justify-between mb-4">
-                          <div className="flex items-center gap-2">
-                            <span className="text-sm font-semibold">{tanda.name}</span>
-                            {tanda.startDate && tanda.endDate && tanda.ticketTypes.length > 0 && (
-                              <CheckCircle2 className="w-4 h-4 text-green-500" />
-                            )}
-                          </div>
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => removeTanda(tandaIndex)}
-                            className="h-8 w-8 p-0 text-destructive hover:text-destructive hover:bg-destructive/10"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </Button>
-                        </div>
-                        
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-                          <div className="space-y-2">
-                            <Label className="flex items-center gap-1.5 text-sm font-semibold">
-                              <Ticket className="w-3.5 h-3.5 text-blue-600" />
-                              Nombre de la Tanda
-                            </Label>
-                            <Input
-                              value={tanda.name}
-                              onChange={(e) => updateTanda(tandaIndex, 'name', e.target.value)}
-                              placeholder="Ej: Tanda 1 - Preventa"
-                              className="h-10 text-sm"
-                              disabled={mutation.isPending}
-                            />
-                          </div>
-                          <div className="space-y-2">
-                            <Label className="flex items-center gap-1.5 text-sm font-semibold">
-                              <div className="p-1 rounded bg-green-100 dark:bg-green-900/30">
-                                <Calendar className="w-3 h-3 text-green-600 dark:text-green-400" />
-                              </div>
-                              Fecha Inicio *
-                            </Label>
-                            <Input
-                              type="date"
-                              value={tanda.startDate}
-                              onChange={(e) => {
-                                const selectedDate = e.target.value;
-                                // Validar que no sea anterior a hoy
-                                if (selectedDate && selectedDate < getMinDate()) {
-                                  toast({
-                                    title: 'Fecha inválida',
-                                    description: 'La fecha no puede ser anterior a hoy',
-                                    variant: 'destructive',
-                                  });
-                                  return;
-                                }
-                                updateTanda(tandaIndex, 'startDate', selectedDate);
-                              }}
-                              min={getMinDate()}
-                              className="h-10 text-sm"
-                              disabled={mutation.isPending}
-                              required
-                            />
-                            {tanda.startDate && tanda.startDate < getMinDate() && (
-                              <p className="text-xs text-destructive flex items-center gap-1">
-                                <AlertCircle className="w-3 h-3" />
-                                Fecha no puede ser anterior a hoy
-                              </p>
-                            )}
-                          </div>
-                          <div className="space-y-2">
-                            <Label className="flex items-center gap-1.5 text-sm font-semibold">
-                              <div className="p-1 rounded bg-red-100 dark:bg-red-900/30">
-                                <Calendar className="w-3 h-3 text-red-600 dark:text-red-400" />
-                              </div>
-                              Fecha Fin *
-                            </Label>
-                            <Input
-                              type="date"
-                              value={tanda.endDate}
-                              onChange={(e) => {
-                                const selectedDate = e.target.value;
-                                // Validar que no sea anterior a la fecha de inicio
-                                if (selectedDate && tanda.startDate && selectedDate < tanda.startDate) {
-                                  toast({
-                                    title: 'Fecha inválida',
-                                    description: 'La fecha de fin no puede ser anterior a la fecha de inicio',
-                                    variant: 'destructive',
-                                  });
-                                  return;
-                                }
-                                // Validar que no sea anterior a hoy
-                                if (selectedDate && selectedDate < getMinDate()) {
-                                  toast({
-                                    title: 'Fecha inválida',
-                                    description: 'La fecha no puede ser anterior a hoy',
-                                    variant: 'destructive',
-                                  });
-                                  return;
-                                }
-                                updateTanda(tandaIndex, 'endDate', selectedDate);
-                              }}
-                              min={tanda.startDate || getMinDate()}
-                              className="h-10 text-sm"
-                              disabled={mutation.isPending}
-                              required
-                            />
-                            {tanda.endDate && tanda.startDate && tanda.endDate < tanda.startDate && (
-                              <p className="text-xs text-destructive flex items-center gap-1">
-                                <AlertCircle className="w-3 h-3" />
-                                Fecha fin debe ser posterior a fecha inicio
-                              </p>
-                            )}
-                          </div>
-                        </div>
-
-                        <div className="pt-4 border-t">
-                          <Label className="text-sm font-semibold mb-3 block">Precios y Cantidades por Tipo de Entrada</Label>
-                          <div className="space-y-3">
-                            {ticketTypes.filter(tt => tt.name && tt.name.trim()).map((tt, ttIndex) => {
-                              const tandaType = tanda.ticketTypes.find(t => t.name === tt.name) || {
-                                name: tt.name,
-                                price: '',
-                                quantity: '',
-                              };
-                              
-                              return (
-                                <div key={ttIndex} className="p-3 bg-background rounded-lg border">
-                                  <div className="flex items-center gap-2 mb-2">
-                                    <span className="text-sm font-medium">{tt.name}</span>
-                                  </div>
-                                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                                    <div>
-                                      <Label className="text-xs">Precio (AR$) *</Label>
-                                      <Input
-                                        type="number"
-                                        value={tandaType.price}
-                                        onChange={(e) => updateTandaTicketType(tandaIndex, tt.name, 'price', e.target.value)}
-                                        placeholder="0"
-                                        min="0"
-                                        step="0.01"
-                                        className="h-9"
-                                        disabled={mutation.isPending}
-                                      />
-                                    </div>
-                                    <div>
-                                      <Label className="text-xs">Cantidad *</Label>
-                                      <Input
-                                        type="number"
-                                        value={tandaType.quantity}
-                                        onChange={(e) => updateTandaTicketType(tandaIndex, tt.name, 'quantity', e.target.value)}
-                                        placeholder="0"
-                                        min="1"
-                                        className="h-9"
-                                        disabled={mutation.isPending}
-                                      />
-                                    </div>
-                                  </div>
-                                </div>
-                              );
-                            })}
-                            {ticketTypes.filter(tt => tt.name && tt.name.trim()).length === 0 && (
-                              <p className="text-sm text-muted-foreground text-center py-4">
-                                Primero debes definir tipos de entrada con nombre
-                              </p>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                    ))
                   )}
                 </CardContent>
               </Card>

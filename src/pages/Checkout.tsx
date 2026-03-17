@@ -52,6 +52,7 @@ const Checkout = () => {
   const eventData = location.state?.event;
   const selectedTickets = location.state?.tickets || {};
   const refCode = location.state?.refCode; // Código de referido
+  const selectedAge = location.state?.selectedAge as number | undefined;
   const { trackInitiateCheckout, trackPurchase } = useTrackEvent();
 
   // Calcular totalAmount antes de cualquier uso
@@ -88,6 +89,24 @@ const Checkout = () => {
   if (!eventData || !selectedTickets || Object.keys(selectedTickets).length === 0) {
     navigate('/eventos');
     return null;
+  }
+
+  // Si el evento tiene restricción de edad, validar que venga la edad y cumpla el mínimo
+  if (eventData.ageRestriction && eventData.minAge != null) {
+    if (selectedAge == null || selectedAge === undefined) {
+      toast({ title: 'Seleccioná tu edad en la página del evento', variant: 'destructive' });
+      navigate(`/evento/${eventData.id}`, { state: { event: eventData, tickets: selectedTickets, refCode } });
+      return null;
+    }
+    if (selectedAge < eventData.minAge) {
+      toast({
+        title: 'Edad mínima',
+        description: `Este evento es para mayores de ${eventData.minAge} años.`,
+        variant: 'destructive',
+      });
+      navigate(`/evento/${eventData.id}`, { state: { event: eventData, tickets: selectedTickets, refCode } });
+      return null;
+    }
   }
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
