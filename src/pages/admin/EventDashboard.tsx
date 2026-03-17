@@ -24,7 +24,6 @@ import {
   PieChart,
   Loader2,
   ShoppingBag,
-  MinusCircle,
 } from 'lucide-react';
 import { useState } from 'react';
 
@@ -166,81 +165,28 @@ const EventDashboard = () => {
           </button>
         </div>
 
-        {/* Tabla tipo Passline: una fila por evento con Configuración (nombre + acciones), Lugar/País, Código, Llave, Fecha, Aforo, Venta WEB, Estado */}
-        <div className="border rounded-lg overflow-hidden mb-6">
-          <table className="w-full">
-            <thead>
-              <tr className="bg-muted/50">
-                <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground align-top w-[28%]">Configuración Evento</th>
-                <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground align-top">Lugar / País</th>
-                <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground align-top">Código</th>
-                <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground align-top">Llave</th>
-                <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground align-top">Fecha evento</th>
-                <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground align-top">Aforo</th>
-                <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground align-top">Venta WEB</th>
-                <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground align-top">Estado</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr className="border-t">
-                <td className="py-3 px-4 align-top">
-                  <div className="font-medium text-foreground mb-2">{event.title}</div>
-                  <div className="flex flex-col gap-1">
-                    {col1.map((item, i) => (
-                      <button
-                        key={i}
-                        type="button"
-                        onClick={() => handleAction(item)}
-                        className="flex items-center gap-2 text-left text-sm text-foreground hover:text-emerald-600 transition-colors"
-                      >
-                        {item.icon}
-                        {item.label}
-                      </button>
-                    ))}
-                  </div>
-                </td>
-                <td className="py-3 px-4 align-top">
-                  <div>{lugarPais || '-'}</div>
-                  <div className="text-muted-foreground text-sm">{event?.organizer?.name || ''} / {paisLine}</div>
-                </td>
-                <td className="py-3 px-4 font-mono text-sm align-top">{codigo}</td>
-                <td className="py-3 px-4 font-mono text-sm align-top">{llave}</td>
-                <td className="py-3 px-4 align-top">
-                  {eventDate ? (
-                    <>
-                      <div>{eventDate.toLocaleDateString('es-AR', { day: 'numeric', month: 'long' })}</div>
-                      <div className="text-muted-foreground text-sm">{eventDate.getFullYear()} a las {eventDate.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' })}</div>
-                    </>
-                  ) : '-'}
-                </td>
-                <td className="py-3 px-4 align-top">{ticketsSold} de {totalCapacity}</td>
-                <td className="py-3 px-4 align-top">$ {new Intl.NumberFormat('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(revenue)}</td>
-                <td className="py-3 px-4 align-top">
-                  <div className="flex items-center gap-2">
-                    <span>{getEventStatus()}</span>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        if (confirm('¿Desactivar este evento? No se mostrará en la cartelera.')) {
-                          navigate(`/admin/events/${id}/edit`);
-                        }
-                      }}
-                      className="p-0.5 rounded-full text-destructive hover:bg-destructive/10"
-                      title="Desactivar evento"
-                    >
-                      <MinusCircle className="w-4 h-4" />
-                    </button>
-                  </div>
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
+        <h1 className="text-2xl font-semibold text-foreground mb-6">{event.title}</h1>
 
-        {/* Acciones bajo la tabla: gestión de tickets/listas y reportes/marketing */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {/* Tres columnas: Configuración Evento | Gestión de tickets y listas | Reportes y marketing */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
           <div className="space-y-0">
-            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide px-2 mb-2">Gestión de tickets y listas</p>
+            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide px-2 mb-3">Configuración Evento</p>
+            <div className="flex flex-col gap-0.5">
+              {col1.map((item, i) => (
+                <button
+                  key={i}
+                  type="button"
+                  onClick={() => handleAction(item)}
+                  className="flex items-center gap-3 py-3 px-2 text-left rounded text-foreground hover:bg-muted/50 transition-colors"
+                >
+                  <span className="flex-shrink-0">{item.icon}</span>
+                  <span className="text-sm font-medium">{item.label}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+          <div className="space-y-0">
+            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide px-2 mb-3">Gestión de tickets y listas</p>
             {col2.map((item, i) => (
               <button
                 key={i}
@@ -253,7 +199,7 @@ const EventDashboard = () => {
             ))}
           </div>
           <div className="space-y-0">
-            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide px-2 mb-2">Reportes y marketing</p>
+            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide px-2 mb-3">Reportes y marketing</p>
             {col3.map((item, i) => (
               <button
                 key={i}
