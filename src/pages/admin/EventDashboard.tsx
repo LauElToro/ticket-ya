@@ -191,7 +191,7 @@ const EventDashboard = () => {
                         key={i}
                         type="button"
                         onClick={() => handleAction(item)}
-                        className="flex items-center gap-2 text-left text-sm text-muted-foreground hover:text-foreground"
+                        className="flex items-center gap-2 text-left text-sm text-foreground hover:text-emerald-600 transition-colors"
                       >
                         {item.icon}
                         {item.label}
@@ -245,7 +245,7 @@ const EventDashboard = () => {
               <button
                 key={i}
                 onClick={() => handleAction(item)}
-                className="w-full flex items-center gap-3 py-3 px-2 text-left rounded hover:bg-muted/50 transition-colors"
+                className="w-full flex items-center gap-3 py-3 px-2 text-left rounded text-foreground hover:bg-muted/50 transition-colors"
               >
                 <span className="flex-shrink-0">{item.icon}</span>
                 <span className="text-sm font-medium">{item.label}</span>
@@ -258,7 +258,7 @@ const EventDashboard = () => {
               <button
                 key={i}
                 onClick={() => handleAction(item)}
-                className="w-full flex items-center gap-3 py-3 px-2 text-left rounded hover:bg-muted/50 transition-colors"
+                className="w-full flex items-center gap-3 py-3 px-2 text-left rounded text-foreground hover:bg-muted/50 transition-colors"
               >
                 <span className="flex-shrink-0">{item.icon}</span>
                 <span className="text-sm font-medium">{item.label}</span>

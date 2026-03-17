@@ -1,4 +1,17 @@
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
+// URL del API: VITE_API_URL en build, o en producción (Netlify) fallback al backend en Vercel
+const PRODUCTION_API = 'https://ticket-backend-nine.vercel.app/api';
+const envUrl = (import.meta.env.VITE_API_URL || '').trim();
+const isProductionSite =
+  typeof window !== 'undefined' && !/localhost|127\.0\.0\.1/.test(window.location.hostname);
+
+const API_URL =
+  envUrl && !envUrl.includes('localhost')
+    ? envUrl.endsWith('/api')
+      ? envUrl
+      : envUrl.replace(/\/?$/, '') + '/api'
+    : isProductionSite
+      ? PRODUCTION_API
+      : 'http://localhost:3000/api';
 
 class ApiClient {
   private baseURL: string;
